@@ -1,0 +1,45 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* CSS custom properties kept for D3, which sets fill/stroke via var(--...)
+   directly in JS (see src/components/sections/*). Keep these in sync with
+   the color tokens in tailwind.config.js. */
+:root {
+  --color-bg: #0e1116;
+  --color-panel: #161b22;
+  --color-text: #e6edf3;
+  --color-muted: #8b949e;
+  --color-accent: #ff6b35;
+  --color-accent-2: #2ea8ff;
+
+  /* Font judul & subjudul. Ganti di sini bila ingin font lain. */
+  --font-heading: "Press Start 2P", ui-monospace, monospace;
+  --font-sub: "Andada Pro", Georgia, serif;
+}
+
+html,
+body,
+#root {
+  @apply m-0 bg-bg text-ink font-sans;
+  scroll-behavior: smooth;
+}
+
+@layer components {
+  .story-section {
+    @apply min-h-screen max-w-story mx-auto flex flex-col justify-center gap-6 px-6 py-16;
+  }
+  /* Press Start 2P hanya punya satu ketebalan (400) dan hurufnya sangat lebar,
+     jadi: tanpa font-bold (supaya tidak menebal palsu) dan ukuran diperkecil. */
+  .story-heading {
+    font-family: var(--font-heading);
+    @apply text-[clamp(0.9rem,2.4vw,1.5rem)] font-normal leading-relaxed m-0;
+  }
+  .story-lede {
+    font-family: var(--font-sub);
+    @apply text-muted max-w-[65ch] leading-relaxed;
+  }
+  .viz-container {
+    @apply w-full overflow-x-auto;
+  }
+}

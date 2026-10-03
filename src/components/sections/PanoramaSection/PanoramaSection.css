@@ -1,0 +1,135 @@
+.pa-section {
+  --pa-lime: #d7ff1e;
+  --pa-ink: #111;
+  position: relative;
+  height: 300vh; /* ruang scroll: dua langkah kamera */
+}
+
+.pa-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: 100svh;
+  overflow: hidden;
+  background: #1c1f1a;
+}
+
+.pa-stage {
+  position: absolute;
+  inset: 0;
+}
+
+.pa-stage canvas {
+  display: block;
+}
+
+.pa-head {
+  position: absolute;
+  inset: 0 0 auto 0;
+  padding: 1.25rem 1.25rem 3rem;
+  color: #fff;
+  background: linear-gradient(rgba(0, 0, 0, 0.55), transparent);
+  pointer-events: none;
+}
+
+.pa-head h2 {
+  margin: 0;
+  max-width: 40rem;
+}
+
+/* Garis, titik, dan kotak: posisi diisi dari JavaScript tiap frame */
+.pa-callout {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.pa-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+}
+
+.pa-svg line {
+  stroke: var(--pa-lime);
+  stroke-width: 2;
+}
+
+.pa-svg circle {
+  fill: var(--pa-lime);
+  stroke: var(--pa-ink);
+  stroke-width: 1.5;
+}
+
+.pa-box {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: max-content;
+  max-width: min(18rem, 70vw);
+  padding: 0.5rem 0.7rem;
+  background: var(--pa-lime);
+  color: var(--pa-ink);
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  opacity: 0;
+}
+
+.pa-box strong,
+.pa-box span {
+  display: block;
+}
+
+.pa-box span {
+  font-size: 0.8rem;
+}
+
+/* Muncul ala deteksi objek saat langkah scroll pertama */
+.pa-callout.is-live .pa-svg,
+.pa-callout.is-live .pa-box {
+  animation: pa-detect 0.5s steps(4, end) 0.6s forwards;
+}
+
+@keyframes pa-detect {
+  to {
+    opacity: 1;
+  }
+}
+
+.pa-msg {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  text-align: center;
+  color: #fff;
+}
+
+.pa-debug {
+  position: absolute;
+  left: 0.75rem;
+  bottom: 0.75rem;
+  padding: 0.35rem 0.6rem;
+  background: var(--pa-ink);
+  color: var(--pa-lime);
+  font-family: ui-monospace, Menlo, Consolas, monospace;
+  font-size: 0.8rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pa-callout.is-live .pa-svg,
+  .pa-callout.is-live .pa-box {
+    animation: none;
+    opacity: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .pa-box {
+    font-size: 0.78rem;
+  }
+}

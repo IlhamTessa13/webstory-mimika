@@ -1,0 +1,282 @@
+import { useEffect, useRef } from "react";
+import L from "leaflet";
+import "leaflet/dist/leaflet.css";
+import klassenData from "../../../data/klassen_kabkota.json";
+
+// Data sumber: data/tipologi_klassen.xlsx (514 kab/kota) dan
+// data/all_kabkota_ind.geojson (514 poligon). Keduanya dicocokkan lewat nama
+// kab/kota — termasuk menyamakan format penulisan ("Kab." -> "KABUPATEN",
+// "Kep." -> "Kepulauan") dan 17 nama yang berbeda ejaan/spasi atau sudah
+// berganti nama (mis. "Karangasem" vs "Karang Asem", "Bau-bau" vs "Baubau",
+// "OKU Selatan" vs "Ogan Komering Ulu Selatan", "Kepulauan Tanimbar" yang di
+// GeoJSON masih "Maluku Tenggara Barat"). Nama yang tampil di peta memakai
+// penulisan dari Excel.
+//
+// Hasil pencocokan (+ geometri yang sudah disederhanakan, 10 MB → ~560 KB,
+// topologi tetap terjaga) disimpan di src/data/klassen_kabkota.json dengan
+// properti: kabkota, provinsi, pdrbPerKapita (juta Rp), laju (pecahan, mis.
+// 0.0536 = 5,36%), kuadran ("I"–"IV"), isMimika.
+
+// Palet Okabe–Ito (Color Universal Design) — empat warna kategorikal yang
+// dibedakan oleh hue DAN kecerahan, aman untuk hampir semua jenis buta warna.
+const KLASSEN = {
+  I: {
+    color: "#0072B2", // biru
+    title: "Kuadran I",
+    label: "Maju & tumbuh cepat",
+    hint: "PDRB per kapita tinggi, pertumbuhan tinggi",
+  },
+  II: {
+    color: "#D55E00", // vermillion
+    title: "Kuadran II",
+    label: "Maju tapi tertekan",
+    hint: "PDRB per kapita tinggi, pertumbuhan rendah",
+  },
+  III: {
+    color: "#F0E442", // kuning
+    title: "Kuadran III",
+    label: "Berkembang cepat",
+    hint: "PDRB per kapita rendah, pertumbuhan tinggi",
+  },
+  IV: {
+    color: "#8C8C8C", // abu-abu
+    title: "Kuadran IV",
+    label: "Relatif tertinggal",
+    hint: "PDRB per kapita rendah, pertumbuhan rendah",
+  },
+};
+const QUADRANTS = Object.keys(KLASSEN);
+
+// Peta dibuka dengan seluruh Indonesia pas di dalam bingkai.
+const INDONESIA_BOUNDS = [
+  [-11.5, 94.5],
+  [6.5, 141.5],
+];
+
+const numberFmt = (n) =>
+  n.toLocaleString("id-ID", { maximumFractionDigits: 2 });
+const percentFmt = (n) =>
+  `${(n * 100).toLocaleString("id-ID", { maximumFractionDigits: 2 })}%`;
+
+// Ringkasan (dihitung dari data, dipakai di legenda & teks interpretasi)
+const COUNTS = QUADRANTS.reduce((acc, q) => {
+  acc[q] = klassenData.features.filter(
+    (f) => f.properties.kuadran === q,
+  ).length;
+  return acc;
+}, {});
+const TOTAL = klassenData.features.length;
+const MIMIKA = klassenData.features.find((f) => f.properties.isMimika)
+  ?.properties;
+
+export default function ChoroplethSection() {
+  const mapElRef = useRef(null);
+  const mapInstanceRef = useRef(null);
+
+  useEffect(() => {
+    const el = mapElRef.current;
+    if (!el || mapInstanceRef.current) return undefined;
+
+    const map = L.map(el, {
+      scrollWheelZoom: true,
+      zoomControl: true,
+      minZoom: 3,
+      preferCanvas: true,
+    });
+    mapInstanceRef.current = map;
+
+    // Basemap: citra satelit Esri World Imagery (gratis, tanpa API key).
+    const satellite = L.tileLayer(
+      "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+      {
+        attribution:
+          "Tiles &copy; Esri — Source: Esri, Maxar, Earthstar Geographics, and the GIS User Community",
+        maxZoom: 18,
+      },
+    );
+    satellite.addTo(map);
+
+    // Buka dengan seluruh Indonesia pas di bingkai; ukuran peta bisa berubah
+    // (layout/resize), jadi sesuaikan ulang lewat ResizeObserver.
+    let fitted = false;
+    const fitIfReady = () => {
+      map.invalidateSize();
+      if (!fitted && el.clientWidth > 0 && el.clientHeight > 0) {
+        map.fitBounds(INDONESIA_BOUNDS, { padding: [6, 6] });
+        fitted = true;
+      }
+    };
+    fitIfReady();
+    const ro = new ResizeObserver(fitIfReady);
+    ro.observe(el);
+
+    // --- Layer choropleth: satu poligon per kab/kota, diwarnai per kuadran.
+    // Mimika diberi garis tepi gelap tebal supaya mudah ditemukan.
+    const baseStyle = (feature) => {
+      const p = feature.properties;
+      return {
+        fillColor: KLASSEN[p.kuadran].color,
+        fillOpacity: 0.85,
+        color: p.isMimika ? "#111111" : "#ffffff",
+        weight: p.isMimika ? 2.5 : 0.5,
+        opacity: 1,
+      };
+    };
+
+    const tooltipHtml = (p) => {
+      const k = KLASSEN[p.kuadran];
+      const neg = p.laju < 0;
+      return `<div style="font-family:system-ui,sans-serif;line-height:1.45;min-width:190px">
+        <strong>${p.kabkota}</strong><br/>
+        <span style="opacity:.75">${p.provinsi}</span>
+        <div style="margin-top:4px">
+          PDRB per kapita: <strong>${numberFmt(p.pdrbPerKapita)} jt Rp</strong><br/>
+          Laju pertumbuhan: <strong style="color:${neg ? "#D55E00" : "#009E73"}">${percentFmt(p.laju)}</strong>
+        </div>
+        <div style="margin-top:5px;display:flex;align-items:center;gap:6px">
+          <span style="width:11px;height:11px;border-radius:3px;background:${k.color};border:1px solid #333;display:inline-block;flex-shrink:0"></span>
+          <span><strong>${k.title}</strong> — ${k.label}</span>
+        </div>
+      </div>`;
+    };
+
+    const geoLayer = L.geoJSON(klassenData, {
+      style: baseStyle,
+      smoothFactor: 0.6,
+      onEachFeature: (feature, layer) => {
+        layer.bindTooltip(tooltipHtml(feature.properties), {
+          sticky: true,
+          direction: "top",
+          opacity: 0.97,
+        });
+        layer.on({
+          mouseover: () => {
+            layer.setStyle({ weight: 2.5, color: "#111111" });
+            layer.bringToFront();
+          },
+          mouseout: () => {
+            layer.setStyle(baseStyle(feature));
+            if (feature.properties.isMimika) layer.bringToFront();
+          },
+        });
+      },
+    }).addTo(map);
+
+    // Mimika selalu di atas poligon tetangganya
+    geoLayer.eachLayer((layer) => {
+      if (layer.feature.properties.isMimika) layer.bringToFront();
+    });
+
+    // --- Kontrol layer: nyalakan/matikan layer kuadran
+    L.control
+      .layers(null, { "Tipologi Klassen": geoLayer }, {
+        collapsed: false,
+        position: "topright",
+      })
+      .addTo(map);
+
+    // --- Legenda: warna kuadran + jumlah kab/kota
+    const legend = L.control({ position: "bottomleft" });
+    legend.onAdd = () => {
+      const div = L.DomUtil.create("div");
+      div.style.cssText =
+        "background:rgba(255,255,255,0.94);color:#2b2b2b;padding:8px 10px;border-radius:8px;" +
+        "font-family:system-ui,sans-serif;font-size:11px;box-shadow:0 2px 8px rgba(0,0,0,0.25);max-width:210px";
+      div.innerHTML = `
+        <div style="font-weight:700;margin-bottom:5px">Tipologi Klassen</div>
+        ${QUADRANTS.map((q) => {
+          const k = KLASSEN[q];
+          return `
+          <div style="display:flex;align-items:flex-start;gap:6px;margin-bottom:4px">
+            <span style="width:12px;height:12px;border-radius:3px;background:${k.color};border:1px solid #333;display:inline-block;flex-shrink:0;margin-top:1px"></span>
+            <span><strong>${k.title}</strong> · ${COUNTS[q]} daerah<br/><span style="opacity:.75">${k.label}</span></span>
+          </div>`;
+        }).join("")}
+        <div style="margin-top:5px;padding-top:5px;border-top:1px solid #ddd;opacity:.8;font-size:10px">
+          Garis tepi hitam tebal = Mimika
+        </div>
+      `;
+      return div;
+    };
+    legend.addTo(map);
+
+    return () => {
+      ro.disconnect();
+      map.remove();
+      mapInstanceRef.current = null;
+    };
+  }, []);
+
+  const mimikaK = MIMIKA ? KLASSEN[MIMIKA.kuadran] : null;
+
+  return (
+    <section className="relative bg-[#f4f0e7] lg:h-screen" id="choropleth">
+      {/* Seluruh section dibuat setinggi layar (desktop): judul, subjudul,
+          peta, dan interpretasi terlihat dalam satu frame. */}
+      <div className="max-w-story mx-auto flex h-full w-full flex-col gap-2 px-6 py-4 md:py-5">
+        <div className="flex shrink-0 flex-col gap-1">
+          <h2
+            className="story-heading text-[#2b2b2b]"
+            style={{
+              fontSize: "clamp(1.2rem, 2.2vw, 1.8rem)",
+              lineHeight: 1.2,
+              margin: 0,
+            }}
+          >
+            Peta Tipologi Klassen Indonesia
+          </h2>
+          <p
+            className="story-lede text-[#5c564c]"
+            style={{
+              fontSize: "clamp(0.78rem, 1vw, 0.92rem)",
+              lineHeight: 1.45,
+              margin: 0,
+            }}
+          >
+            Choropleth ini memetakan {TOTAL} kabupaten/kota ke salah satu dari
+            empat kuadran Tipologi Klassen. Arahkan kursor ke sebuah wilayah
+            untuk melihat PDRB per kapita, laju pertumbuhan, dan kuadrannya.
+          </p>
+        </div>
+
+        <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
+          <div
+            ref={mapElRef}
+            className="h-[55vh] min-h-[320px] w-full overflow-hidden rounded-xl border border-black/10 lg:h-auto lg:min-h-0 lg:flex-1"
+          />
+
+          <aside className="w-full shrink-0 overflow-y-auto rounded-xl border border-black/10 bg-white/90 p-4 lg:w-[300px]">
+            <p className="text-xs uppercase tracking-[0.15em] text-[#0072B2] font-semibold mb-2">
+              Interpretasi
+            </p>
+            {MIMIKA && mimikaK && (
+              <p className="text-[13px] text-[#5c564c] leading-relaxed mb-3">
+                Mimika (garis tepi hitam tebal, Papua Tengah) berada pada{" "}
+                <span className="font-semibold text-[#D55E00]">
+                  {mimikaK.title}
+                </span>{" "}
+                — {mimikaK.label.toLowerCase()}: PDRB per kapita{" "}
+                {numberFmt(MIMIKA.pdrbPerKapita)} juta Rp, tetapi laju
+                pertumbuhannya{" "}
+                <span className="font-semibold">
+                  {percentFmt(MIMIKA.laju)}
+                </span>
+                .
+              </p>
+            )}
+            <p className="text-[13px] text-[#5c564c] leading-relaxed mb-3">
+              Dari {TOTAL} kabupaten/kota, hanya {COUNTS.II} daerah yang masuk
+              Kuadran II. Sebagian besar berada di Kuadran IV ({COUNTS.IV}) dan
+              III ({COUNTS.III}), sedangkan Kuadran I hanya {COUNTS.I} daerah.
+            </p>
+            <p className="text-[13px] text-[#5c564c] leading-relaxed">
+              Zoom dan geser peta untuk membandingkan Mimika dengan wilayah
+              tetangganya. Layer kuadran bisa dimatikan lewat kontrol di kanan
+              atas untuk melihat citra satelit di bawahnya.
+            </p>
+          </aside>
+        </div>
+      </div>
+    </section>
+  );
+}
