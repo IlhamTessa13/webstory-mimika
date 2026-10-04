@@ -66,8 +66,9 @@ const COUNTS = QUADRANTS.reduce((acc, q) => {
   return acc;
 }, {});
 const TOTAL = klassenData.features.length;
-const MIMIKA = klassenData.features.find((f) => f.properties.isMimika)
-  ?.properties;
+const MIMIKA = klassenData.features.find(
+  (f) => f.properties.isMimika,
+)?.properties;
 
 export default function ChoroplethSection() {
   const mapElRef = useRef(null);
@@ -169,10 +170,14 @@ export default function ChoroplethSection() {
 
     // --- Kontrol layer: nyalakan/matikan layer kuadran
     L.control
-      .layers(null, { "Tipologi Klassen": geoLayer }, {
-        collapsed: false,
-        position: "topright",
-      })
+      .layers(
+        null,
+        { "Tipologi Klassen": geoLayer },
+        {
+          collapsed: false,
+          position: "topright",
+        },
+      )
       .addTo(map);
 
     // --- Legenda: warna kuadran + jumlah kab/kota
@@ -192,9 +197,7 @@ export default function ChoroplethSection() {
             <span><strong>${k.title}</strong> · ${COUNTS[q]} daerah<br/><span style="opacity:.75">${k.label}</span></span>
           </div>`;
         }).join("")}
-        <div style="margin-top:5px;padding-top:5px;border-top:1px solid #ddd;opacity:.8;font-size:10px">
-          Garis tepi hitam tebal = Mimika
-        </div>
+ 
       `;
       return div;
     };
@@ -216,26 +219,25 @@ export default function ChoroplethSection() {
       <div className="max-w-story mx-auto flex h-full w-full flex-col gap-2 px-6 py-4 md:py-5">
         <div className="flex shrink-0 flex-col gap-1">
           <h2
-            className="story-heading text-[#2b2b2b]"
+            className="story-heading text-[#d74534]"
             style={{
               fontSize: "clamp(1.2rem, 2.2vw, 1.8rem)",
               lineHeight: 1.2,
               margin: 0,
             }}
           >
-            Peta Tipologi Klassen Indonesia
+            Anomali di Kuadran II: Potret Daerah Kaya yang Melambat
           </h2>
           <p
-            className="story-lede text-[#5c564c]"
+            className="story-lede text-[#2a3f61]"
             style={{
               fontSize: "clamp(0.78rem, 1vw, 0.92rem)",
               lineHeight: 1.45,
               margin: 0,
             }}
           >
-            Choropleth ini memetakan {TOTAL} kabupaten/kota ke salah satu dari
-            empat kuadran Tipologi Klassen. Arahkan kursor ke sebuah wilayah
-            untuk melihat PDRB per kapita, laju pertumbuhan, dan kuadrannya.
+            Mengelompokkan daerah menggunakan Tipologi Klassen, mencatat PDRB
+            per kapita tertinggi, namun berada di zona pertumbuhan negatif.
           </p>
         </div>
 
@@ -245,37 +247,44 @@ export default function ChoroplethSection() {
             className="h-[55vh] min-h-[320px] w-full overflow-hidden rounded-xl border border-black/10 lg:h-auto lg:min-h-0 lg:flex-1"
           />
 
-          <aside className="w-full shrink-0 overflow-y-auto rounded-xl border border-black/10 bg-white/90 p-4 lg:w-[300px]">
-            <p className="text-xs uppercase tracking-[0.15em] text-[#0072B2] font-semibold mb-2">
+          <aside className="story-lede w-full shrink-0 overflow-y-auto rounded-xl border border-black/10 bg-white/90 p-4 lg:w-[300px]">
+            <p className="story-lede  text-xs uppercase tracking-[0.15em] text-[#0072B2] font-semibold mb-2">
               Interpretasi
             </p>
             {MIMIKA && mimikaK && (
               <p className="text-[13px] text-[#5c564c] leading-relaxed mb-3">
-                Mimika (garis tepi hitam tebal, Papua Tengah) berada pada{" "}
-                <span className="font-semibold text-[#D55E00]">
-                  {mimikaK.title}
-                </span>{" "}
-                — {mimikaK.label.toLowerCase()}: PDRB per kapita{" "}
-                {numberFmt(MIMIKA.pdrbPerKapita)} juta Rp, tetapi laju
-                pertumbuhannya{" "}
-                <span className="font-semibold">
-                  {percentFmt(MIMIKA.laju)}
-                </span>
-                .
+                Peta choropleth Tipologi Klassen mengklasifikasikan 514
+                kabupaten/kota di Indonesia ke dalam empat kuadran pertumbuhan
+                dan pendapatan untuk memetakan karakter pembangunan daerah
+                secara komparatif. Dari total wilayah tersebut, mayoritas daerah
+                terkonsentrasi pada Kuadran IV (204 daerah atau relatif
+                tertinggal) dan Kuadran III (179 daerah atau berkembang cepat),
+                sementara 71 daerah berada di Kuadran I (maju dan tumbuh cepat)
+                serta 60 daerah berada di Kuadran II (daerah maju tapi
+                tertekan).
               </p>
             )}
             <p className="text-[13px] text-[#5c564c] leading-relaxed mb-3">
-              Dari {TOTAL} kabupaten/kota, hanya {COUNTS.II} daerah yang masuk
-              Kuadran II. Sebagian besar berada di Kuadran IV ({COUNTS.IV}) dan
-              III ({COUNTS.III}), sedangkan Kuadran I hanya {COUNTS.I} daerah.
+              Kabupaten Mimika sebagai salah satu contoh anomali paling
+              signifikan yang masuk ke dalam Kuadran II (Maju tapi Tertekan),
+              yang ditandai pada peta dengan warna khusus di wilayah Papua
+              Tengah. Masuknya Mimika ke Kuadran II mengindikasikan bahwa
+              meskipun daerah ini memiliki tingkat PDRB per kapita yang jauh
+              melampaui rata-rata nasional, laju pertumbuhan ekonominya
+              mengalami kontraksi hingga mencapai -26,22% pada tahun 2025.
             </p>
             <p className="text-[13px] text-[#5c564c] leading-relaxed">
-              Zoom dan geser peta untuk membandingkan Mimika dengan wilayah
-              tetangganya. Layer kuadran bisa dimatikan lewat kontrol di kanan
-              atas untuk melihat citra satelit di bawahnya.
+              Kondisi ini memperlihatkan karakteristik khas daerah dengan sumber
+              daya alam yang melimpah, memiliki nilai ekonomi makro yang sangat
+              tinggi secara nominal, namun rentan terhadap perlambatan dan
+              pertumbuhan negatif apabila sektor dominannya mengalami penurunan.
             </p>
           </aside>
         </div>
+
+        <p className="shrink-0 text-center text-[11px] text-[#5c564c]">
+          Sumber data: Badan Pusat Statistik
+        </p>
       </div>
     </section>
   );

@@ -142,31 +142,19 @@ function buildCards(model) {
       key: "overview",
       eyebrow: "Gambaran Umum",
       title: moneyFmt(total),
-      body: `Ekspor Mimika keluar lewat ${ports.length} pelabuhan, lalu menuju ${countries.length} negara tujuan. Tebal pita sebanding dengan nilai ekspor, dan warna pita menunjukkan pelabuhan pengirimnya. Gunakan filter pelabuhan dan negara untuk menelusuri aliran tertentu.`,
+      body: `Diagram Sankey mengilustrasikan jaringan distribusi komoditas konsentrat tembaga (Copper ores and concentrates / HS 26030000) yang bersumber dari Kabupaten Mimika. Alur visual ini memperlihatkan bagaimana volume ekspor besar dari wilayah tambang dialirkan melalui jalur pelabuhan muat domestik sebelum akhirnya terdistribusi secara luas ke berbagai negara tujuan mitra dagang.`,
     },
     {
       key: "port",
       eyebrow: `Pelabuhan ${topPort.label}`,
       title: `${pct(topPort.value)} dari ekspor`,
-      body: `${topPort.label} menjadi pintu keluar terbesar dengan nilai ${moneyFmt(topPort.value)}.${
-        otherPorts.length
-          ? ` Pelabuhan lain jauh lebih kecil: ${otherPorts
-              .map((p) => `${p.label} (${pct(p.value)})`)
-              .join(" dan ")}.`
-          : ""
-      }`,
+      body: `Sebagian besar aliran ekspor terkonsentrasi melalui Pelabuhan Amamapare sebagai gerbang utama pelabuhan muat lokal di wilayah pesisir Mimika. Jalur pita aliran yang paling tebal keluar langsung dari Amamapare menuju pasar internasional menunjukkan bahwa pelabuhan ini menjadi tulang punggung pengiriman logistik luar negeri bagi komoditas tambang utama kabupaten Mimika`,
     },
     {
       key: "country",
       eyebrow: topCountry.label,
       title: `${pct(topCountry.value)} dari ekspor`,
-      body: `${topCountry.label} adalah negara tujuan terbesar dengan nilai ${moneyFmt(topCountry.value)}.${
-        second
-          ? ` ${second.label} menyusul di urutan kedua dengan ${pct(second.value)}, sementara ${
-              countries.length - 2
-            } negara lainnya masing-masing lebih kecil.`
-          : ""
-      }`,
+      body: `Dari berbagai negara tujuan yang terhubung di ujung alur, Tiongkok mendominasi sebagai penerima jalur ekspor terbesar dan terlebar dari Mimika. Besarnya volume pengiriman yang mengarah langsung ke Tiongkok menegaskan bahwa negara tersebut merupakan pasar strategis paling utama dalam menyerap hasil produksi konsentrat tembaga dari Mimika.`,
     },
   ];
 }
@@ -593,27 +581,26 @@ export default function SankeySection() {
           {/* Judul, subjudul, filter, dan grafik menempel dalam satu layar. */}
           <div className="max-w-story mx-auto flex shrink-0 flex-col gap-1 px-6 pb-1 pt-5 md:pt-7">
             <h2
-              className="story-heading text-[#2b2b2b]"
+              className="story-heading text-[#d74534]"
               style={{
                 fontSize: "clamp(1.25rem, 2.3vw, 1.9rem)",
                 lineHeight: 1.2,
                 margin: 0,
               }}
             >
-              Aliran Ekspor Mimika: Pelabuhan dan Negara Tujuan
+              Dari Dalam Tambang Menembus Batas Negara
             </h2>
             <p
-              className="story-lede text-[#5c564c]"
+              className="story-lede text-[#2a3f61]"
               style={{
                 fontSize: "clamp(0.78rem, 1.05vw, 0.95rem)",
                 lineHeight: 1.45,
                 margin: 0,
               }}
             >
-              Dari Mimika, ekspor keluar lewat pelabuhan lalu menuju negara
-              tujuan. Tebal pita menunjukkan nilai ekspor dan warna pita
-              menunjukkan pelabuhan pengirim. Gulir untuk membaca
-              interpretasinya.
+              Mengikuti alur perjalanan komoditas tambang (Copper ores and
+              concentrates / HS 26030000) dari titik Mimika, melintasi
+              pelabuhan, hingga berlabuh ke berbagai negara tujuan.
             </p>
           </div>
 
@@ -713,13 +700,13 @@ export default function SankeySection() {
                 willChange: "transform",
               }}
             >
-              <p className="mb-1 text-xs font-semibold uppercase tracking-[0.15em] text-[#0072B2]">
+              <p className="story-lede  mb-1 text-xs font-semibold uppercase tracking-[0.15em] text-[#0072B2]">
                 {card.eyebrow}
               </p>
-              <h3 className="mb-2 text-lg font-bold text-[#2b2b2b]">
+              <h3 className="story-lede mb-2 text-lg font-bold text-[#2b2b2b]">
                 {card.title}
               </h3>
-              <p className="text-sm leading-relaxed text-[#5c564c]">
+              <p className="story-lede text-sm leading-relaxed text-[#5c564c]">
                 {card.body}
               </p>
             </div>

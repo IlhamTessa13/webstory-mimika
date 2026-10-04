@@ -144,27 +144,19 @@ function buildCards(model) {
       key: "overview",
       eyebrow: "Gambaran Umum",
       title: `${numberFmt(total)} miliar Rp`,
-      body: `Total PDRB Mimika diurai dalam dua lingkaran. Lingkaran dalam menunjukkan kelompok sektor — ${Object.keys(catTotals).join(", ")} — sedangkan lingkaran luar merinci ${leafCount} lapangan usaha di dalamnya. Besar irisan sebanding dengan nilai PDRB. Arahkan kursor ke irisan untuk melihat rinciannya, atau gunakan filter untuk menampilkan kelompok sektor tertentu.`,
+      body: `Diagram sunburst menyajikan struktur hierarki PDRB Kabupaten Mimika secara proporsional dengan menempatkan 3 kelompok sektor utama (Primer, Sekunder, Tersier) di lingkaran dalam dan menjabarkannya ke dalam 17 lapangan usaha di lingkaran luar. Visualisasi ini memperlihatkan bentuk ekonomi yang sangat terpusat, di mana lingkaran sektor Primer menguasai hampir seluruh ruang secara mutlak, sedangkan sektor Sekunder dan Tersier hanya mendominasi porsi yang sangat kecil di sudut lingkaran, mencerminkan ciri khas daerah kaya sumber daya alam.`,
     },
     {
       key: "primer",
       eyebrow: "Sektor Primer",
       title: `${pctOfTotal(primer)} dari PDRB`,
-      body: `Sektor Primer menguasai hampir seluruh perekonomian Mimika — jauh di atas ${others
-        .map((n) => `${n} (${pctOfTotal(catTotals[n])})`)
-        .join(
-          " dan ",
-        )}. Bobot sebesar ini menandakan ekonomi yang sangat bertumpu pada sumber daya alam.`,
+      body: `Di dalam kelompok Sektor Primer secara keseluruhan, kontributor utamanya mencatatkan angka besar yang menggerakkan hampir seluruh roda perekonomian makro kabupaten. Besarnya porsi sektor primer ini menegaskan bahwa fondasi utama pdrb di Mimika sangat bertumpu pada kekayaan alam bumi, yang sekaligus menjadikan struktur ekonomi regionalnya sangat rentan terhadap guncangan eksternal apabila sektor ini mengalami perlambatan pertumbuhan.`,
     },
     {
       key: "pertambangan",
       eyebrow: tambang.name,
       title: `${numberFmt(tambang.value)} miliar Rp`,
-      body: `${tambang.name} sendirian menyumbang ${pctOfTotal(tambang.value)} dari seluruh PDRB Mimika, atau sekitar ${pctFmt((tambang.value / primer) * 100)} dari sektor Primer.${
-        pertanian
-          ? ` ${pertanian.name} hanya ${pctOfTotal(pertanian.value)} — lapangan usaha lain nyaris tak terlihat di sampingnya.`
-          : ""
-      }`,
+      body: `Jika dikerucutkan ke dalam sub-kategori spesifik, sektor primer di Mimika sepenuhnya disokong oleh sub-kategori B (Pertambangan dan Penggalian) yang bernilai sangat tinggi, sementara sub-kategori pertanian dan perikanan berada pada skala yang jauh di bawahnya. Hal ini membuktikan bahwa aktivitas penambangan skala besar menjadi satu-satunya mesin penggerak utama yang mendefinisikan angka PDRB per kapita tinggi sekaligus memicu anomali pertumbuhan negatif di wilayah tersebut.`,
     },
   ];
 }
@@ -601,29 +593,28 @@ export default function SunburstSection() {
         >
           {/* Judul & subjudul ikut menempel (sticky) bersama visualisasi,
               jadi selalu terlihat dalam satu frame. */}
-          <div className="max-w-story mx-auto flex shrink-0 flex-col gap-1 px-6 pb-2 pt-5 md:pt-7">
+          <div className="max-w-story mx-auto flex shrink-0 flex-col gap-1 px-6 pb-1 pt-5 md:pt-7">
             <h2
-              className="story-heading text-[#2b2b2b]"
+              className="story-heading text-[#d74534]"
               style={{
                 fontSize: "clamp(1.25rem, 2.3vw, 1.9rem)",
                 lineHeight: 1.2,
                 margin: 0,
               }}
             >
-              Struktur PDRB Mimika: Primer, Sekunder, Tersier
+              Membedah Struktur Ekonomi Mimika
             </h2>
             <p
-              className="story-lede text-[#5c564c]"
+              className="story-lede text-[#2a3f61]"
               style={{
                 fontSize: "clamp(0.78rem, 1.05vw, 0.95rem)",
                 lineHeight: 1.45,
                 margin: 0,
               }}
             >
-              Lingkaran dalam menunjukkan kelompok sektor, lingkaran luar
-              merinci lapangan usaha di dalamnya. Gulir untuk membaca
-              interpretasinya, atau pilih kelompok sektor di bawah untuk
-              menampilkan irisan tertentu.
+              Menelusuri lebih dalam 17 lapangan usaha di Mimika. Perjalanan
+              hierarkis dari kelompok primer, sekunder, hingga tersier untuk
+              menemukan sektor tunggal yang menjadi penopang utama daerah.
             </p>
           </div>
 
@@ -711,13 +702,13 @@ export default function SunburstSection() {
                 willChange: "transform",
               }}
             >
-              <p className="text-xs uppercase tracking-[0.15em] text-[#0072B2] font-semibold mb-1">
+              <p className="story-lede  text-xs uppercase tracking-[0.15em] text-[#0072B2] font-semibold mb-1">
                 {card.eyebrow}
               </p>
-              <h3 className="text-lg font-bold text-[#2b2b2b] mb-2">
+              <h3 className="story-lede  text-lg font-bold text-[#2b2b2b] mb-2">
                 {card.title}
               </h3>
-              <p className="text-sm text-[#5c564c] leading-relaxed">
+              <p className="story-lede  text-sm text-[#5c564c] leading-relaxed">
                 {card.body}
               </p>
             </div>

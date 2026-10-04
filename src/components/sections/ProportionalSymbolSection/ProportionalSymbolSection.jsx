@@ -268,8 +268,7 @@ export default function ProportionalSymbolSection() {
             )
             .join("")}
         </div>
-        <div style="margin-top:5px;opacity:.8;font-size:9px">garis putus-putus = pertumbuhan negatif</div>
-        <div style="margin-top:2px;opacity:.8;font-size:9px">cincin putih = Mimika</div>
+  
       `;
       return div;
     };
@@ -294,26 +293,26 @@ export default function ProportionalSymbolSection() {
       <div className="max-w-story mx-auto flex h-full w-full flex-col gap-2 px-6 py-4 md:py-5">
         <div className="flex shrink-0 flex-col gap-1">
           <h2
-            className="story-heading text-[#2b2b2b]"
+            className="story-heading text-[#d74534]"
             style={{
               fontSize: "clamp(1.2rem, 2.2vw, 1.8rem)",
               lineHeight: 1.2,
               margin: 0,
             }}
           >
-            Peta Simbol Proporsional: PDRB per Kapita &amp; Pertumbuhannya
+            Skala Ekonomi Nusantara: Siapa yang Paling Cepat Tumbuh?
           </h2>
           <p
-            className="story-lede text-[#5c564c]"
+            className="story-lede text-[#2a3f61]"
             style={{
               fontSize: "clamp(0.78rem, 1vw, 0.92rem)",
               lineHeight: 1.45,
               margin: 0,
             }}
           >
-            Tiap lingkaran mewakili satu kabupaten/kota. Warna menunjukkan kelas
-            PDRB per kapita (natural breaks, 4 kelas); ukuran sebanding dengan
-            laju pertumbuhan PDRB — Mimika ditandai cincin putih.
+            Memetakan potret PDRB per kapita dan laju pertumbuhan ekonomi
+            seluruh kabupaten/kota di Indonesia pada tahun 2025 untuk melihat
+            kontras pembangunan antarwilayah.
           </p>
         </div>
 
@@ -324,42 +323,43 @@ export default function ProportionalSymbolSection() {
           />
 
           <aside className="w-full shrink-0 overflow-y-auto rounded-xl border border-black/10 bg-white/90 p-4 lg:w-[300px]">
-            <p className="text-xs uppercase tracking-[0.15em] text-[#0072B2] font-semibold mb-2">
-              Interpretasi
+            <p className="story-lede text-xs uppercase tracking-[0.15em] text-[#0072B2] font-semibold mb-2">
+              Penjelasan
             </p>
             {MIMIKA && (
-              <p className="text-[13px] text-[#5c564c] leading-relaxed mb-3">
-                Mimika punya PDRB per kapita yang tergolong{" "}
-                <span className="font-semibold">
-                  {CLASS_LEVELS[MIMIKA_CLASS]}
-                </span>{" "}
-                (kelas warna {CLASS_NAMES[MIMIKA_CLASS]})
-                {mimikaNegative ? (
-                  <>
-                    , tapi lingkarannya kecil &amp; bergaris putus-putus —
-                    artinya laju pertumbuhannya justru{" "}
-                    <span className="text-[#D55E00] font-semibold">
-                      negatif
-                    </span>
-                    .
-                  </>
-                ) : (
-                  "."
-                )}
+              <p className=" story-lede text-[13px] text-[#5c564c] leading-relaxed mb-3">
+                Visualisasi peta simbol proporsional memperlihatkan sebaran
+                ekonomi nasional yang sangat terkonsentrasi secara spasial, di
+                mana ukuran simbol merepresentasikan besarnya nilai PDRB per
+                kapita (dalam juta rupiah) dan gradasi warnanya mencerminkan
+                tingkat laju pertumbuhan ekonomi kabupaten/kota pada tahun 2025
+                (dalam persen). Berdasarkan data agregat nasional terhadap 514
+                kabupaten/kota, rata-rata PDRB per kapita berada di angka
+                Rp77,64 juta dengan standar deviasi yang cukup lebar,
+                mencerminkan kesenjangan kesejahteraan yang tajam antar wilayah.
               </p>
             )}
-            <p className="text-[13px] text-[#5c564c] leading-relaxed mb-3">
-              Pola ini — kemakmuran tinggi namun pertumbuhan melambat atau
-              menyusut — adalah ciri khas Kuadran II pada Tipologi Klassen, inti
-              dari investigasi webstory ini.
+            <p className="story-lede text-[13px] text-[#5c564c] leading-relaxed mb-3">
+              Simbol-simbol lingkaran berukuran raksasa dengan warna yang
+              mencolok tampak mendominasi daerah-daerah ekonomi tertentu seperti
+              DKI Jakarta, sebagian wilayah Kalimantan, serta wilayah timur
+              Indonesia—khususnya Kabupaten Mimika di Provinsi Papua Tengah yang
+              mencatatkan PDRB per kapita sangat tinggi mencapai Rp395,26 juta.
             </p>
-            <p className="text-[13px] text-[#5c564c] leading-relaxed">
-              Zoom &amp; geser peta untuk membandingkan Mimika dengan
-              kabupaten/kota berwarna serupa (PDRB per kapita setara) tapi
-              lingkarannya jauh lebih besar (tumbuh lebih cepat).
+            <p className="story-lede text-[13px] text-[#5c564c] leading-relaxed">
+              Namun, di balik ukuran simbol ekonomi yang masif tersebut, peta
+              ini juga menangkap anomali berupa variasi tingkat pertumbuhan, di
+              mana beberapa wilayah dengan skala ekonomi besar justru mengalami
+              tekanan pertumbuhan yang ditandai dengan laju pertumbuhan negatif,
+              kontras dengan daerah berkembang lain yang mencatat pertumbuhan
+              positif stabil di kisaran rata-rata nasional (4,99%).
             </p>
           </aside>
         </div>
+
+        <p className="shrink-0 text-center text-[11px] text-[#5c564c]">
+          Sumber data: Badan Pusat Statistik
+        </p>
       </div>
     </section>
   );

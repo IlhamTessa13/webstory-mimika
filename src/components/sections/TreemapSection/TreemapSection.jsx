@@ -101,11 +101,11 @@ const UNIFORM_MAX_H = 480;
 
 const CATEGORY_NOTES = {
   Primer:
-    "Sektor Primer — terutama pertambangan & penggalian — adalah penyumbang terbesar PDRB Mimika, mencerminkan ketergantungan tinggi pada aktivitas ekstraktif seperti tambang tembaga dan emas.",
+    "Di dalam struktur internal Kabupaten Mimika, Sektor Primer (yang mencakup Pertanian, Kehutanan, Perikanan, serta Pertambangan dan Penggalian) mendominasi secara mutlak dengan nilai mencapai Rp116,19 triliun atau menyumbang sekitar 88,6% dari total PDRB Mimika. Jika dibandingkan dengan kabupaten lain di Papua Tengah yang sektor primernya relatif kecil (seperti Nabire di angka Rp5,83 triliun atau Paniai di Rp2,32 triliun), sektor primer Mimika mencatatkan skala ukuran yang jauh melampaui gabungan seluruh kabupaten lain di provinsi tersebut, menjadikannya pusat ekonomi sektor primer utama di Papua Tengah.",
   Sekunder:
-    "Sektor Sekunder (konstruksi, industri pengolahan) jauh lebih kecil dibanding Primer — menandakan diversifikasi ekonomi Mimika yang belum merata.",
+    "Sektor Sekunder di Kabupaten Mimika menorehkan angka sebesar Rp3,55 triliun, menempatkannya sebagai kategori sektor dengan porsi terkecil di Mimika. Meskipun nilainya tampak kecil (hanya menyumbang sekitar 2,7% dari total PDRB Mimika), jika dikomparasikan secara regional, angka sekunder Mimika tetap berada di jajaran atas dibandingkan kabupaten lain seperti Puncak Jaya (Rp530,68 miliar) atau Dogiyai (Rp289,77 miliar), yang mengindikasikan adanya aktivitas penunjang industri dan pembangunan infrastruktur fisik skala lokal untuk melayani kawasan operasional tambang.",
   Tersier:
-    "Sektor Tersier (perdagangan, jasa, administrasi pemerintahan) cukup besar, tapi tetap kalah jauh dari skala sektor pertambangan.",
+    "Sektor Tersier di Mimika mencatatkan angka yang cukup besar yakni sebesar Rp11,32 triliun, menjadikannya blok terbesar kedua setelah sektor primer di wilayah tersebut. Dalam konteks komparasi regional Papua Tengah, besaran sektor tersier Mimika jauh di atas Nabire (Rp7,43 triliun) dan kabupaten lainnya. Besarnya porsi tersier ini mencerminkan tingginya perputaran uang, aktivitas perdagangan, jasa perusahaan, serta perputaran logistik perkotaan yang tumbuh untuk menopang ekosistem ekonomi di sekitar pusat kegiatan industri utama.",
 };
 
 const numberFmt = (n) =>
@@ -158,9 +158,9 @@ const mimikaValue = (cat) =>
 const CARDS = [
   {
     key: "mimika",
-    eyebrow: "Sorotan Wilayah",
-    title: "Mimika",
-    body: `Mimika menyumbang sekitar ${pctFmt(mimikaShare)} dari total PDRB kawasan ini — jauh melampaui tujuh kabupaten lainnya digabung. Dominasi ini salah satu faktor di balik posisinya pada Kuadran II.`,
+    eyebrow: "Gambaran Umum",
+    title: "Papua Tengah",
+    body: `Berdasarkan visualisasi treemap PDRB ADHB tahun 2025 di Provinsi Papua Tengah (total PDRB regional mencapai Rp161,61 triliun), Kabupaten Mimika tampil sebagai daerah yang mendominasi lebih dari 80% dari total ekonomi provinsi dengan nilai PDRB mencapai Rp131,08 triliun. Blok ukuran Mimika terlihat sangat besar jika dibandingkan dengan kabupaten tetangga seperti Nabire (Rp16,12 triliun), Paniai (Rp5,63 triliun), atau Puncak (Rp1,87 triliun). Dominasi ini menunjukkan bahwa perekonomian makro Papua Tengah sangat bergantung pada kinerja ekonomi Kabupaten Mimika.`,
   },
   {
     key: "Primer",
@@ -609,27 +609,26 @@ export default function TreemapSection() {
           {/* Judul, subjudul, filter, dan grafik menempel dalam satu layar. */}
           <div className="max-w-story mx-auto flex shrink-0 flex-col gap-1 px-6 pb-1 pt-5 md:pt-7">
             <h2
-              className="story-heading text-[#2b2b2b]"
+              className="story-heading text-[#d74534]"
               style={{
                 fontSize: "clamp(1.25rem, 2.3vw, 1.9rem)",
                 lineHeight: 1.2,
                 margin: 0,
               }}
             >
-              Struktur PDRB Menurut Wilayah &amp; Kategori Sektor
+              Anatomi Ekonomi Papua Tengah Didominasi Sektor Primer
             </h2>
             <p
-              className="story-lede text-[#5c564c]"
+              className="story-lede text-[#2a3f61]"
               style={{
                 fontSize: "clamp(0.78rem, 1.05vw, 0.95rem)",
                 lineHeight: 1.45,
                 margin: 0,
               }}
             >
-              Tiap blok mewakili satu kabupaten di Papua Tengah — ukurannya
-              sebanding dengan besaran PDRB. Pilih satu kabupaten untuk melihat
-              rincian sektornya, atau beberapa kabupaten untuk membandingkan
-              ukuran relatifnya.
+              Membandingkan struktur makro (Primer, Sekunder, Tersier)
+              antarkabupaten di Papua Tengah. Terlihat jelas bagaimana ukuran
+              ekonomi Mimika didominasi oleh fondasi yang timpang.
             </p>
           </div>
 
@@ -703,13 +702,13 @@ export default function TreemapSection() {
                 willChange: "transform",
               }}
             >
-              <p className="text-xs uppercase tracking-[0.15em] text-[#0072B2] font-semibold mb-1">
+              <p className="story-lede text-xs uppercase tracking-[0.15em] text-[#0072B2] font-semibold mb-1">
                 {card.eyebrow}
               </p>
-              <h3 className="text-lg font-bold text-[#2b2b2b] mb-2">
+              <h3 className="story-lede text-lg font-bold text-[#2b2b2b] mb-2">
                 {card.title}
               </h3>
-              <p className="text-sm text-[#5c564c] leading-relaxed">
+              <p className="story-lede text-sm text-[#5c564c] leading-relaxed">
                 {card.body}
               </p>
             </div>

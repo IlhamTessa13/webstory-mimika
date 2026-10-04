@@ -142,10 +142,10 @@ export default function ShipGameSection({ onComplete }) {
       style={{ backgroundColor: BG, color: INK }}
     >
       <div className="max-w-xl text-center">
-        <h2 className="story-heading m-0 text-[clamp(1.4rem,3.5vw,2rem)] font-bold">
+        <h2 className="story-heading text-[#d74534] m-0 text-[clamp(1.4rem,3.5vw,2rem)] font-bold">
           Bantu Kapal Lawd Berlayar
         </h2>
-        <p className="story-lede mt-2 text-sm leading-relaxed opacity-80">
+        <p className="story-lede text-[#2a3f61] mt-2 text-sm leading-relaxed opacity-80">
           Untuk membuka section berikutnya, bantu kapal Lawd mengangkut hasil
           komoditas ekspor ke pelabuhan tujuan. Hindari batu-batu di perairan
           agar barang-barang ekspor tetap aman.
@@ -237,8 +237,10 @@ export default function ShipGameSection({ onComplete }) {
               style={{ backgroundColor: "rgba(244,240,231,0.88)" }}
             >
               <div>
-                <p className="m-0 text-2xl font-bold">Kapal sampai!</p>
-                <p className="mt-1 text-sm opacity-80">
+                <p className="story-heading text-[#d74534] m-0 text-2xl font-bold">
+                  Kapal sampai!
+                </p>
+                <p className="story-lede text-[#2a3f61] mt-1 text-sm opacity-80">
                   Membuka section berikutnya…
                 </p>
               </div>

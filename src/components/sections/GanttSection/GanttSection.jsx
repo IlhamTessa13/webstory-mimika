@@ -629,26 +629,27 @@ export default function GanttSection() {
           {/* Judul, subjudul, filter, dan grafik menempel dalam satu layar. */}
           <div className="max-w-story mx-auto flex shrink-0 flex-col gap-1 px-6 pb-1 pt-5 md:pt-7">
             <h2
-              className="story-heading text-[#2b2b2b]"
+              className="story-heading text-[#d74534]"
               style={{
                 fontSize: "clamp(1.25rem, 2.3vw, 1.9rem)",
                 lineHeight: 1.2,
                 margin: 0,
               }}
             >
-              Timeline Ekspor Mimika per Negara Tujuan, {YEAR}
+              Kalender Ekspor Mimika: Kapan dan Ke Mana Hasil Tambang Mimika
+              Berlayar pada tahun 2025?
             </h2>
             <p
-              className="story-lede text-[#5c564c]"
+              className="story-lede text-[#2a3f61]"
               style={{
                 fontSize: "clamp(0.78rem, 1.05vw, 0.95rem)",
                 lineHeight: 1.45,
                 margin: 0,
               }}
             >
-              Setiap baris adalah satu negara, setiap batang adalah satu bulan
-              ekspor. Warna dan tinggi batang menunjukkan nilai ekspor bulan
-              itu. Gulir untuk membaca interpretasinya.
+              Membedah linimasa bulanan pengiriman Copper ores and concentrates
+              / HS 26030000 sepanjang tahun 2025 ke masing-masing negara mitra
+              dagang.
             </p>
           </div>
 
@@ -723,13 +724,13 @@ export default function GanttSection() {
                 willChange: "transform",
               }}
             >
-              <p className="mb-1 text-xs font-semibold uppercase tracking-[0.15em] text-[#0072B2]">
+              <p className="story-lede mb-1 text-xs font-semibold uppercase tracking-[0.15em] text-[#0072B2]">
                 {card.eyebrow}
               </p>
-              <h3 className="mb-2 text-lg font-bold text-[#2b2b2b]">
+              <h3 className="story-lede mb-2 text-lg font-bold text-[#2b2b2b]">
                 {card.title}
               </h3>
-              <p className="text-sm leading-relaxed text-[#5c564c]">
+              <p className="story-lede text-sm leading-relaxed text-[#5c564c]">
                 {card.body}
               </p>
             </div>
