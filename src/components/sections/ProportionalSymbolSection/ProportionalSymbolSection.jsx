@@ -3,20 +3,6 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import pdrbData from "../../../data/pdrb_geospasial.json";
 
-// Data sumber: data/data_geospasial.xlsx (514 kab/kota), dicocokkan ke
-// koordinat dari data/all_kabkota_ind.geojson lewat nama kab/kota —
-// termasuk menyamakan format penulisan ("Kab./Kota" -> "KABUPATEN/KOTA",
-// singkatan seperti "Kep." -> "Kepulauan", beda ejaan seperti "Bau-bau" vs
-// "Baubau", hingga nama yang berubah seperti "Kepulauan Tanimbar" (dulu
-// "Maluku Tenggara Barat"). Hasil pencocokan (lat/lng + nilai) disimpan di
-// src/data/pdrb_geospasial.json supaya tidak perlu memuat ulang geojson
-// mentahnya (~10MB) hanya untuk titik koordinat.
-
-// Palet sekuensial multi-hue, ramah buta warna, TANPA biru:
-// kuning → oranye → jingga kemerahan → ungu tua. Tiga warna pertama berasal
-// dari palet Okabe–Ito; kelas tertinggi ungu tua. Selain beda hue, tiap kelas
-// juga makin gelap (kecerahan menurun monoton), jadi tetap terbedakan oleh
-// penderita protanopia/deuteranopia/tritanopia maupun dalam grayscale.
 const COLORS = ["#F0E442", "#E69F00", "#D55E00", "#5B2A86"];
 const CLASS_NAMES = ["kuning", "oranye", "jingga kemerahan", "ungu tua"];
 const CLASS_LEVELS = [
@@ -26,7 +12,6 @@ const CLASS_LEVELS = [
   "tinggi",
 ];
 
-// Peta dibuka dengan seluruh Indonesia pas di dalam bingkai.
 const INDONESIA_BOUNDS = [
   [-11.5, 94.5],
   [6.5, 141.5],
@@ -37,9 +22,6 @@ const numberFmt = (n) =>
 const percentFmt = (n) =>
   `${(n * 100).toLocaleString("id-ID", { maximumFractionDigits: 2 })}%`;
 
-// Klasifikasi Natural Breaks (algoritma Jenks) — standar untuk
-// mengelompokkan data kontinu ke k kelas yang meminimalkan variansi di
-// dalam tiap kelas. Dipakai di sini untuk 4 kelas warna PDRB per kapita.
 function jenksBreaks(dataIn, numClasses) {
   const data = [...dataIn].sort((a, b) => a - b);
   const n = data.length;
@@ -91,13 +73,10 @@ function jenksBreaks(dataIn, numClasses) {
   return kClass;
 }
 
-// --- Klasifikasi warna: natural breaks (Jenks), 4 kelas, dari PDRB per kapita.
-// Dihitung sekali di level modul supaya peta dan teks interpretasi memakai
-// kelas yang sama.
 const BREAKS = jenksBreaks(
   pdrbData.map((d) => d.pdrbPerKapita),
   4,
-); // [min, b1, b2, b3, max]
+);
 const classIndexFor = (value) => {
   if (value <= BREAKS[1]) return 0;
   if (value <= BREAKS[2]) return 1;
@@ -105,19 +84,8 @@ const classIndexFor = (value) => {
   return 3;
 };
 
-// --- Ukuran lingkaran: dari LAJU PERTUMBUHAN PDRB, searah dengan nilainya —
-// makin tinggi lajunya makin besar lingkarannya; laju negatif = lingkaran
-// terkecil. (Sebelumnya memakai nilai absolut sehingga laju negatif yang besar
-// malah tampak sebagai lingkaran besar.)
-//
-// Sebaran laju sangat miring: median ≈ 5%, tetapi ada pencilan di bawah
-// (Mimika ≈ −26%) dan di atas (hingga ≈ 62%). Kalau skala ditarik dari nilai
-// minimum ke maksimum, hampir semua daerah akan tampak sama besar. Maka skala
-// dipotong di persentil ke-5 dan ke-97: laju ≤ batas bawah (termasuk semua
-// laju negatif) berlingkaran terkecil, laju ≥ batas atas berlingkaran terbesar,
-// dan di antaranya jari-jari naik linear.
-const R_MIN = 3; // px — untuk laju ≤ LAJU_LO
-const R_MAX = 17; // px — untuk laju ≥ LAJU_HI
+const R_MIN = 3;
+const R_MAX = 17;
 const quantile = (arr, q) => {
   const a = [...arr].sort((x, y) => x - y);
   const pos = (a.length - 1) * q;
@@ -151,7 +119,6 @@ export default function ProportionalSymbolSection() {
     });
     mapInstanceRef.current = map;
 
-    // Basemap: citra satelit Esri World Imagery (gratis, tanpa API key).
     const satellite = L.tileLayer(
       "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
       {
@@ -162,8 +129,6 @@ export default function ProportionalSymbolSection() {
     );
     satellite.addTo(map);
 
-    // Buka dengan seluruh Indonesia pas di bingkai; ukuran peta bisa berubah
-    // (layout/resize), jadi sesuaikan ulang lewat ResizeObserver.
     let fitted = false;
     const fitIfReady = () => {
       map.invalidateSize();
@@ -181,8 +146,6 @@ export default function ProportionalSymbolSection() {
       const isNegative = d.laju < 0;
       const radius = radiusFor(d.laju);
 
-      // Mimika: cincin putih ("halo") di luar lingkarannya + garis tepi gelap,
-      // supaya menonjol di atas citra satelit.
       if (d.isMimika) {
         L.circleMarker([d.lat, d.lng], {
           radius: radius + 6,
@@ -218,7 +181,6 @@ export default function ProportionalSymbolSection() {
     });
     symbolLayer.addTo(map);
 
-    // --- Kontrol layer: nyalakan/matikan simbol
     L.control
       .layers(
         null,
@@ -230,7 +192,6 @@ export default function ProportionalSymbolSection() {
       )
       .addTo(map);
 
-    // --- Legenda: warna (natural breaks) + referensi ukuran lingkaran
     const legend = L.control({ position: "bottomleft" });
     legend.onAdd = () => {
       const div = L.DomUtil.create("div");
@@ -268,7 +229,7 @@ export default function ProportionalSymbolSection() {
             )
             .join("")}
         </div>
-  
+
       `;
       return div;
     };
@@ -288,8 +249,8 @@ export default function ProportionalSymbolSection() {
       className="relative bg-[#f4f0e7] lg:h-screen"
       id="proportional-symbol"
     >
-      {/* Seluruh section dibuat setinggi layar (desktop): judul, subjudul,
-          peta, dan interpretasi terlihat dalam satu frame. */}
+      {
+}
       <div className="max-w-story mx-auto flex h-full w-full flex-col gap-2 px-6 py-4 md:py-5">
         <div className="flex shrink-0 flex-col gap-1">
           <h2

@@ -3,43 +3,27 @@ import L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import klassenData from "../../../data/klassen_kabkota.json";
 
-// Data sumber: data/tipologi_klassen.xlsx (514 kab/kota) dan
-// data/all_kabkota_ind.geojson (514 poligon). Keduanya dicocokkan lewat nama
-// kab/kota — termasuk menyamakan format penulisan ("Kab." -> "KABUPATEN",
-// "Kep." -> "Kepulauan") dan 17 nama yang berbeda ejaan/spasi atau sudah
-// berganti nama (mis. "Karangasem" vs "Karang Asem", "Bau-bau" vs "Baubau",
-// "OKU Selatan" vs "Ogan Komering Ulu Selatan", "Kepulauan Tanimbar" yang di
-// GeoJSON masih "Maluku Tenggara Barat"). Nama yang tampil di peta memakai
-// penulisan dari Excel.
-//
-// Hasil pencocokan (+ geometri yang sudah disederhanakan, 10 MB → ~560 KB,
-// topologi tetap terjaga) disimpan di src/data/klassen_kabkota.json dengan
-// properti: kabkota, provinsi, pdrbPerKapita (juta Rp), laju (pecahan, mis.
-// 0.0536 = 5,36%), kuadran ("I"–"IV"), isMimika.
-
-// Palet Okabe–Ito (Color Universal Design) — empat warna kategorikal yang
-// dibedakan oleh hue DAN kecerahan, aman untuk hampir semua jenis buta warna.
 const KLASSEN = {
   I: {
-    color: "#0072B2", // biru
+    color: "#0072B2",
     title: "Kuadran I",
     label: "Maju & tumbuh cepat",
     hint: "PDRB per kapita tinggi, pertumbuhan tinggi",
   },
   II: {
-    color: "#D55E00", // vermillion
+    color: "#D55E00",
     title: "Kuadran II",
     label: "Maju tapi tertekan",
     hint: "PDRB per kapita tinggi, pertumbuhan rendah",
   },
   III: {
-    color: "#F0E442", // kuning
+    color: "#F0E442",
     title: "Kuadran III",
     label: "Berkembang cepat",
     hint: "PDRB per kapita rendah, pertumbuhan tinggi",
   },
   IV: {
-    color: "#8C8C8C", // abu-abu
+    color: "#8C8C8C",
     title: "Kuadran IV",
     label: "Relatif tertinggal",
     hint: "PDRB per kapita rendah, pertumbuhan rendah",
@@ -47,7 +31,6 @@ const KLASSEN = {
 };
 const QUADRANTS = Object.keys(KLASSEN);
 
-// Peta dibuka dengan seluruh Indonesia pas di dalam bingkai.
 const INDONESIA_BOUNDS = [
   [-11.5, 94.5],
   [6.5, 141.5],
@@ -58,7 +41,6 @@ const numberFmt = (n) =>
 const percentFmt = (n) =>
   `${(n * 100).toLocaleString("id-ID", { maximumFractionDigits: 2 })}%`;
 
-// Ringkasan (dihitung dari data, dipakai di legenda & teks interpretasi)
 const COUNTS = QUADRANTS.reduce((acc, q) => {
   acc[q] = klassenData.features.filter(
     (f) => f.properties.kuadran === q,
@@ -86,7 +68,6 @@ export default function ChoroplethSection() {
     });
     mapInstanceRef.current = map;
 
-    // Basemap: citra satelit Esri World Imagery (gratis, tanpa API key).
     const satellite = L.tileLayer(
       "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
       {
@@ -97,8 +78,6 @@ export default function ChoroplethSection() {
     );
     satellite.addTo(map);
 
-    // Buka dengan seluruh Indonesia pas di bingkai; ukuran peta bisa berubah
-    // (layout/resize), jadi sesuaikan ulang lewat ResizeObserver.
     let fitted = false;
     const fitIfReady = () => {
       map.invalidateSize();
@@ -111,8 +90,6 @@ export default function ChoroplethSection() {
     const ro = new ResizeObserver(fitIfReady);
     ro.observe(el);
 
-    // --- Layer choropleth: satu poligon per kab/kota, diwarnai per kuadran.
-    // Mimika diberi garis tepi gelap tebal supaya mudah ditemukan.
     const baseStyle = (feature) => {
       const p = feature.properties;
       return {
@@ -163,12 +140,10 @@ export default function ChoroplethSection() {
       },
     }).addTo(map);
 
-    // Mimika selalu di atas poligon tetangganya
     geoLayer.eachLayer((layer) => {
       if (layer.feature.properties.isMimika) layer.bringToFront();
     });
 
-    // --- Kontrol layer: nyalakan/matikan layer kuadran
     L.control
       .layers(
         null,
@@ -180,7 +155,6 @@ export default function ChoroplethSection() {
       )
       .addTo(map);
 
-    // --- Legenda: warna kuadran + jumlah kab/kota
     const legend = L.control({ position: "bottomleft" });
     legend.onAdd = () => {
       const div = L.DomUtil.create("div");
@@ -197,7 +171,7 @@ export default function ChoroplethSection() {
             <span><strong>${k.title}</strong> · ${COUNTS[q]} daerah<br/><span style="opacity:.75">${k.label}</span></span>
           </div>`;
         }).join("")}
- 
+
       `;
       return div;
     };
@@ -214,8 +188,8 @@ export default function ChoroplethSection() {
 
   return (
     <section className="relative bg-[#f4f0e7] lg:h-screen" id="choropleth">
-      {/* Seluruh section dibuat setinggi layar (desktop): judul, subjudul,
-          peta, dan interpretasi terlihat dalam satu frame. */}
+      {
+}
       <div className="max-w-story mx-auto flex h-full w-full flex-col gap-2 px-6 py-4 md:py-5">
         <div className="flex shrink-0 flex-col gap-1">
           <h2

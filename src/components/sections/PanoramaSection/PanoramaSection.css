@@ -2,45 +2,49 @@
   --pa-lime: #d7ff1e;
   --pa-ink: #111;
   position: relative;
-  height: 300vh; /* ruang scroll: dua langkah kamera */
+  width: 100%;
+  /* tinggi diatur dari JSX (TOTAL_UNITS * 100vh) */
 }
 
 .pa-sticky {
   position: sticky;
   top: 0;
+  width: 100%;
   height: 100vh;
   height: 100svh;
   overflow: hidden;
-  background: #1c1f1a;
+  background: #f4f0e7;
 }
 
-.pa-stage {
+/* Selector digabung dengan .pa-sticky supaya lebih spesifik daripada
+   .mapboxgl-map { position: relative } bawaan mapbox-gl.css */
+.pa-sticky .pa-stage-globe,
+.pa-sticky .pa-stage-pano {
   position: absolute;
   inset: 0;
+  width: 100%;
+  height: 100%;
 }
 
-.pa-stage canvas {
-  display: block;
+.pa-sticky .pa-stage-globe {
+  z-index: 1;
 }
 
-.pa-head {
-  position: absolute;
-  inset: 0 0 auto 0;
-  padding: 1.25rem 1.25rem 3rem;
-  color: #fff;
-  background: linear-gradient(rgba(0, 0, 0, 0.55), transparent);
+.pa-sticky .pa-stage-pano {
+  z-index: 2;
+  opacity: 0;
   pointer-events: none;
 }
 
-.pa-head h2 {
-  margin: 0;
-  max-width: 40rem;
+.pa-stage-globe canvas,
+.pa-stage-pano canvas {
+  display: block;
 }
 
-/* Garis, titik, dan kotak: posisi diisi dari JavaScript tiap frame */
 .pa-callout {
   position: absolute;
   inset: 0;
+  z-index: 3;
   pointer-events: none;
 }
 
@@ -49,6 +53,7 @@
   inset: 0;
   width: 100%;
   height: 100%;
+  overflow: visible;
   opacity: 0;
 }
 
@@ -87,7 +92,6 @@
   font-size: 0.8rem;
 }
 
-/* Muncul ala deteksi objek saat langkah scroll pertama */
 .pa-callout.is-live .pa-svg,
 .pa-callout.is-live .pa-box {
   animation: pa-detect 0.5s steps(4, end) 0.6s forwards;
@@ -102,17 +106,36 @@
 .pa-msg {
   position: absolute;
   inset: 0;
+  z-index: 5;
   display: grid;
   place-items: center;
   padding: 1.5rem;
   text-align: center;
   color: #fff;
+  pointer-events: none;
+}
+
+.pa-hint {
+  position: absolute;
+  left: 50%;
+  bottom: 2rem;
+  z-index: 4;
+  transform: translateX(-50%);
+  padding: 0.5rem 1rem;
+  font-size: 1rem;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: 999px;
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
 }
 
 .pa-debug {
   position: absolute;
   left: 0.75rem;
   bottom: 0.75rem;
+  z-index: 6;
   padding: 0.35rem 0.6rem;
   background: var(--pa-ink);
   color: var(--pa-lime);

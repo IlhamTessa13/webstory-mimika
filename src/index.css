@@ -29,8 +29,7 @@ body,
   .story-section {
     @apply min-h-screen max-w-story mx-auto flex flex-col justify-center gap-6 px-6 py-16;
   }
-  /* Press Start 2P hanya punya satu ketebalan (400) dan hurufnya sangat lebar,
-     jadi: tanpa font-bold (supaya tidak menebal palsu) dan ukuran diperkecil. */
+
   .story-heading {
     font-family: var(--font-heading);
     @apply text-[clamp(0.9rem,2.4vw,1.5rem)] font-normal leading-relaxed m-0;

@@ -1,13 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-/* ------------------------------------------------------------------ */
-/*  KONFIGURASI                                                        */
-/* ------------------------------------------------------------------ */
-
 const BG = "#f4f0e7";
 const INK = "#2b2a27";
 
-const BASE = import.meta.env.BASE_URL; // aset ada di public/
+const BASE = import.meta.env.BASE_URL;
 const IMG = {
   water: `${BASE}water.webp`,
   stone: `${BASE}stone.webp`,
@@ -16,8 +12,6 @@ const IMG = {
   ship: `${BASE}ship.webp`,
 };
 
-// S = start, F = finish, # = batu, . = air.
-// Peta 7x7; sudah dicek ada jalur dari S ke F.
 const MAP = [
   "...#..F",
   ".#...#.",
@@ -61,14 +55,12 @@ const KEYMAP = {
 
 const pixel = { imageRendering: "pixelated" };
 
-/* ------------------------------------------------------------------ */
-
 export default function ShipGameSection({ onComplete }) {
   const sectionRef = useRef(null);
   const shipRef = useRef(null);
   const activeRef = useRef(false);
   const [pos, setPos] = useState(START);
-  const [facing, setFacing] = useState(1); // 1 = kanan, -1 = kiri
+  const [facing, setFacing] = useState(1);
   const [won, setWon] = useState(false);
 
   const bump = () => {
@@ -110,8 +102,6 @@ export default function ShipGameSection({ onComplete }) {
     setFacing(1);
   };
 
-  // Keyboard hanya aktif saat section game terlihat, supaya scroll
-  // dengan panah di bagian lain halaman tidak terganggu.
   useEffect(() => {
     const io = new IntersectionObserver(
       ([e]) => {
@@ -143,7 +133,7 @@ export default function ShipGameSection({ onComplete }) {
     >
       <div className="max-w-xl text-center">
         <h2 className="story-heading text-[#d74534] m-0 text-[clamp(1.4rem,3.5vw,2rem)] font-bold">
-          Bantu Kapal Lawd Budiono Siregar Berlayar
+          Bantu Kapal Lawd Berlayar
         </h2>
         <p className="story-lede text-[#2a3f61] mt-2 text-sm leading-relaxed opacity-80">
           Untuk membuka section berikutnya, bantu kapal Lawd mengangkut hasil
@@ -153,7 +143,7 @@ export default function ShipGameSection({ onComplete }) {
       </div>
 
       <div className="flex w-full flex-col items-center justify-center gap-5">
-        {/* Arena */}
+        {}
         <div
           className="relative aspect-square w-[min(90vw,560px)] overflow-hidden border-4"
           style={{ borderColor: INK, backgroundColor: "#1f4e79" }}
@@ -186,7 +176,7 @@ export default function ShipGameSection({ onComplete }) {
             }),
           )}
 
-          {/* Label start & finish */}
+          {}
           {[
             { p: START, t: "START" },
             { p: FINISH, t: "FINISH" },
@@ -205,7 +195,7 @@ export default function ShipGameSection({ onComplete }) {
             </span>
           ))}
 
-          {/* Kapal */}
+          {}
           <div
             className="absolute z-20"
             style={{
@@ -248,7 +238,7 @@ export default function ShipGameSection({ onComplete }) {
           )}
         </div>
 
-        {/* Tombol arah (bisa diklik/disentuh; keyboard juga tetap aktif) */}
+        {}
         <div className="flex flex-col items-center gap-3">
           <div className="flex justify-center gap-2">
             {[

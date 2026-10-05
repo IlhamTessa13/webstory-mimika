@@ -12,12 +12,12 @@ import SankeySection from "./components/sections/SankeySection/SankeySection.jsx
 import GanttSection from "./components/sections/GanttSection/GanttSection.jsx";
 
 export default function App() {
-  // Section setelah game baru dirender setelah kapal sampai di finish.
+
   const [unlocked, setUnlocked] = useState(false);
 
   useEffect(() => {
     if (!unlocked) return;
-    // Tunggu section baru ter-render, lalu geser ke Sankey.
+
     const id = requestAnimationFrame(() => {
       document.getElementById("sankey")?.scrollIntoView({ behavior: "smooth" });
     });

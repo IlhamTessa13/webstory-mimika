@@ -1,10 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as d3 from "d3";
 
-// ---------------------------------------------------------------------------
-// Data PDRB Kabupaten Mimika (miliar rupiah), bersumber dari Data_Mimika.xlsx.
-// Format baris: [Kategori, Sub Kategori (diawali kode lapangan usaha), PDRB].
-// ---------------------------------------------------------------------------
 const RAW_ROWS = [
   ["Primer", "A Pertanian, Kehutanan, dan Perikanan", 1710.33],
   ["Primer", "B Pertambangan dan Penggalian", 114486.85],
@@ -37,25 +33,20 @@ const RAW_ROWS = [
   ["Tersier", "R,S,T,U Jasa Lainnya", 315.74],
 ];
 
-// Palet Okabe–Ito — standar "Color Universal Design", aman untuk hampir
-// semua jenis buta warna. Satu warna dasar per kategori; sub kategori
-// memakai tint (campuran putih) dari warna induknya, selang-seling terang/gelap
-// supaya irisan bertetangga tetap terbedakan tanpa bergantung pada hue.
 const CATEGORY_COLORS = {
-  Primer: "#E69F00", // oranye
-  Sekunder: "#009E73", // hijau kebiruan
-  Tersier: "#0072B2", // biru
+  Primer: "#E69F00",
+  Sekunder: "#009E73",
+  Tersier: "#0072B2",
 };
 const FALLBACK_COLORS = ["#CC79A7", "#56B4E9", "#D55E00", "#999999"];
 const TINTS = [0.5, 0.18, 0.42, 0.3, 0.52, 0.22, 0.46, 0.34, 0.56, 0.26, 0.4];
 
 const SOURCE = "Badan Pusat Statistik";
 const STROKE = "#2b2b2b";
-const SWEEP_IN_MS = 1800; // lama animasi melingkar sampai lingkaran penuh
-const SWEEP_OUT_MS = 1100; // lama animasi menarik kembali (mundur) saat section ditinggalkan
+const SWEEP_IN_MS = 1800;
+const SWEEP_OUT_MS = 1100;
 const FULL = 2 * Math.PI;
 
-// Label kategori memudar seiring sapuan hampir penuh (dan hilang duluan saat mundur).
 const labelOpacity = (sweep) =>
   Math.min(1, Math.max(0, (sweep / FULL - 0.85) / 0.15));
 
@@ -77,7 +68,6 @@ function getContrastText(hex) {
   return yiq >= 150 ? "#2b2b2b" : "#ffffff";
 }
 
-// --- Susun hierarki dari baris data ---
 function buildModel(rows) {
   const cats = [];
   const byName = new Map();
@@ -85,8 +75,6 @@ function buildModel(rows) {
     const value = Number(pdrb);
     if (!kategori || !sub || !Number.isFinite(value)) return;
 
-    // Bersihkan: baris baru → spasi, lalu pisahkan kode lapangan usaha
-    // ("A ", "M,N ", "R,S,T,U ") dari nama.
     const raw = String(sub).replace(/\s+/g, " ").trim();
     const m = raw.match(/^([A-Z](?:,[A-Z])*)\s+(.+)$/);
     const leaf = { code: m ? m[1] : "", name: m ? m[2] : raw, value };
@@ -111,8 +99,6 @@ function buildModel(rows) {
   });
   const total = sum(Object.values(catTotals).map((value) => ({ value })));
 
-  // Irisan "Pertambangan": lapangan usaha berawalan "Pertambangan",
-  // jika tidak ada → yang terbesar di kategori Primer.
   const allLeaves = cats.flatMap((c) => c.children);
   const primerLeaves = (byName.get("Primer") || cats[0]).children;
   const tambang =
@@ -130,8 +116,6 @@ function buildModel(rows) {
   };
 }
 
-// --- Kartu narasi (isi dihitung dari seluruh data, tidak terpengaruh filter).
-// Urutan: gambaran umum → Primer → Pertambangan.
 function buildCards(model) {
   const { total, catTotals, leafCount, tambang } = model;
   const pctOfTotal = (v) => pctFmt((v / total) * 100);
@@ -161,31 +145,19 @@ function buildCards(model) {
   ];
 }
 
-// --- Penjadwalan scroll: setiap kartu bergerak terus-menerus dari bawah
-// layar ke atas layar tanpa berhenti. Kartu diberi jarak waktu (CARD_STAGGER)
-// sehingga jarak vertikal antar kartu selalu lebih besar dari tinggi kartu
-// -> tidak pernah tabrakan.
-//
-// Jarak antar kartu (vh) = (2 * TRAVEL_VH) * CARD_STAGGER / CARD_DURATION
-//   = 240 * 1.1 / 3.0 = 88vh  (tinggi kartu sekitar 30-40vh, jadi aman)
 const CARD_COUNT = 3;
-const NEUTRAL_DURATION = 0.5; // jeda awal: sunburst polos, belum ada kartu
-const CARD_DURATION = 3.0; // lama 1 kartu menempuh bawah -> atas. Makin besar, makin pelan
-const CARD_STAGGER = 1.1; // selisih waktu mulai antar kartu. Makin besar, makin renggang
-const TRAVEL_VH = 120; // kartu mulai di +120vh (bawah) dan berakhir di -120vh (atas)
+const NEUTRAL_DURATION = 0.5;
+const CARD_DURATION = 3.0;
+const CARD_STAGGER = 1.1;
+const TRAVEL_VH = 120;
 const TOTAL_UNITS =
   NEUTRAL_DURATION + (CARD_COUNT - 1) * CARD_STAGGER + CARD_DURATION;
-// Sunburst mulai ditarik mundur sedikit sebelum akhir section (saat kartu
-// terakhir hampir selesai), supaya terasa "menutup" ketika Anda scroll ke bawah.
 const LEAVE_MARGIN = 0.3;
 
-// Kehalusan inersia scroll (ms): makin besar -> makin halus/lambat.
 const SMOOTHING_MS = 280;
 
 const sceneStart = (i) => NEUTRAL_DURATION + i * CARD_STAGGER;
 
-// Offset vertikal kartu ke-i (dalam vh) relatif terhadap posisi tengah layar.
-// Gerak linear (kecepatan konstan) -> kartu melewati tengah tanpa berhenti.
 function cardOffsetVh(raw, i) {
   const t = (raw - sceneStart(i)) / CARD_DURATION;
   const clamped = Math.min(1, Math.max(0, t));
@@ -198,24 +170,23 @@ export default function SunburstSection() {
   const vizRef = useRef(null);
   const svgSelectionRef = useRef(null);
   const cardRefs = useRef([]);
-  const filterRef = useRef([]); // kategori terpilih (kosong = semua)
-  const sweepRef = useRef(0); // sudut sapuan saat ini (0 = kosong, 2π = penuh)
-  const targetRef = useRef(0); // sudut tujuan animasi (0 atau 2π)
-  const visibleRef = useRef(false); // grafik sedang terlihat di layar?
-  const completeRef = useRef(false); // sudah mendekati akhir section?
-  const controlRef = useRef(null); // { sync } diisi oleh efek penggambaran
+  const filterRef = useRef([]);
+  const sweepRef = useRef(0);
+  const targetRef = useRef(0);
+  const visibleRef = useRef(false);
+  const completeRef = useRef(false);
+  const controlRef = useRef(null);
   const tipRef = useRef(null);
   const tipKickerRef = useRef(null);
   const tipTitleRef = useRef(null);
   const tipDetailRef = useRef(null);
 
   const [isComplete, setIsComplete] = useState(false);
-  const [selCats, setSelCats] = useState([]); // kosong = semua kategori
+  const [selCats, setSelCats] = useState([]);
 
   const model = useMemo(() => buildModel(RAW_ROWS), []);
   const cards = useMemo(() => buildCards(model), [model]);
 
-  // Tooltip (diatur langsung lewat DOM supaya tidak render ulang tiap gerakan mouse).
   const showTip = (event, kicker, title, detail) => {
     const tip = tipRef.current;
     const box = stickyRef.current;
@@ -240,9 +211,6 @@ export default function SunburstSection() {
     if (tipRef.current) tipRef.current.style.opacity = "0";
   };
 
-  // Gambar sunburst. Dipanggil saat data siap, dan lagi saat ukuran kontainer
-  // berubah (resize) — bukan setiap tick scroll. Animasi melingkar diputar
-  // sekali, saat grafik pertama kali terlihat di layar.
   useEffect(() => {
     if (!model) return undefined;
     const el = vizRef.current;
@@ -250,8 +218,6 @@ export default function SunburstSection() {
 
     let animateTo = null;
 
-    // Sunburst "terbuka" (sapuan penuh) hanya saat terlihat dan belum
-    // mendekati akhir section. Selain itu ditarik mundur ke kosong.
     const sync = () => {
       const t = visibleRef.current && !completeRef.current ? FULL : 0;
       if (t === targetRef.current) return;
@@ -269,14 +235,11 @@ export default function SunburstSection() {
 
       const isNarrow = width < 640;
       const R = Math.max(80, Math.min(width, height) / 2 - 8);
-      // Tata letak seperti referensi: lubang tengah, lingkaran dalam
-      // (kategori), celah tipis, lalu lingkaran luar (sub kategori).
       const rHoleIn = R * 0.26;
       const rInnerOut = R * 0.58;
       const rOuterIn = R * 0.62;
       const rOuterOut = R;
 
-      // Tanpa .sort() supaya urutan tetap sesuai data (Primer → Sekunder → Tersier).
       const root = d3.hierarchy(model.root).sum((d) => d.value);
       d3.partition().size([2 * Math.PI, 1])(root);
       const leaves = root.leaves();
@@ -297,7 +260,6 @@ export default function SunburstSection() {
         )(TINTS[idx % TINTS.length]);
       };
 
-      // Sudut akhir dibatasi oleh `sweep` → irisan "tumbuh" searah jarum jam.
       let sweep = sweepRef.current;
       const arc = d3
         .arc()
@@ -306,8 +268,6 @@ export default function SunburstSection() {
         .innerRadius((d) => (d.depth === 1 ? rHoleIn : rOuterIn))
         .outerRadius((d) => (d.depth === 1 ? rInnerOut : rOuterOut));
 
-      // Irisan yang belum "terjangkau" sapuan (sudut nol) TIDAK digambar sama
-      // sekali — kalau tidak, d3.arc tetap menggambar garis radial bertepi.
       const arcPath = (d) => (sweep > d.x0 ? arc(d) : null);
 
       const svg = d3
@@ -324,7 +284,6 @@ export default function SunburstSection() {
       const detailFor = (v) =>
         `${numberFmt(v)} miliar Rp · ${pctFmt((v / totalValue) * 100)} dari PDRB`;
 
-      // --- Lingkaran dalam: kategori ---
       g.selectAll("path.inner")
         .data(root.children)
         .join("path")
@@ -340,7 +299,6 @@ export default function SunburstSection() {
         )
         .on("pointerleave", hideTip);
 
-      // --- Lingkaran luar: sub kategori (tanpa label; info lewat hover) ---
       g.selectAll("path.outer")
         .data(leaves)
         .join("path")
@@ -371,7 +329,6 @@ export default function SunburstSection() {
 
       const allPaths = g.selectAll("path.inner, path.outer");
 
-      // --- Label kategori (hanya di lingkaran dalam) ---
       const labelsG = g
         .append("g")
         .attr("class", "labels")
@@ -395,7 +352,6 @@ export default function SunburstSection() {
           const name = d.data.name;
 
           if (arcWidth >= name.length * 0.62 * fs + 10) {
-            // Irisan cukup lebar → teks horizontal di tengah irisan
             sel
               .append("text")
               .attr("x", innerMidR * Math.sin(theta))
@@ -409,7 +365,6 @@ export default function SunburstSection() {
             return;
           }
 
-          // Irisan sempit → teks radial (searah jari-jari), dibalik bila di sisi kiri
           const fsR = Math.max(6.5, Math.min(fs, arcWidth - 2));
           sel
             .append("text")
@@ -425,8 +380,6 @@ export default function SunburstSection() {
             .text(name);
         });
 
-      // Animasi melingkar dua arah: maju (0 → 2π) saat masuk, mundur (2π → 0)
-      // saat keluar. Bisa dibalik di tengah jalan tanpa lompat.
       const render = () => {
         allPaths.attr("d", arcPath);
         labelsG.attr("opacity", labelOpacity(sweep));
@@ -450,7 +403,6 @@ export default function SunburstSection() {
       };
 
       applyFilter(filterRef.current, 0);
-      // Setelah digambar ulang (mis. resize), lanjutkan animasi ke tujuan terakhir.
       if (Math.abs(sweep - targetRef.current) > 1e-6)
         animateTo(targetRef.current);
     };
@@ -472,12 +424,8 @@ export default function SunburstSection() {
       controlRef.current = null;
       el.innerHTML = "";
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [model]);
 
-  // Terapkan filter ke DOM yang sudah ada (tanpa menggambar ulang).
-  // Geometri irisan TIDAK diubah: irisan yang tidak dipilih hanya disembunyikan,
-  // sehingga irisan terpilih tetap berbentuk potongan sunburst di sudut aslinya.
   function applyFilter(sel, duration = 400) {
     const svg = svgSelectionRef.current;
     if (!svg) return;
@@ -504,7 +452,6 @@ export default function SunburstSection() {
   useEffect(() => {
     filterRef.current = selCats;
     applyFilter(selCats);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selCats]);
 
   const toggleCat = (name) =>
@@ -512,13 +459,10 @@ export default function SunburstSection() {
       prev.includes(name) ? prev.filter((v) => v !== name) : [...prev, name],
     );
 
-  // Scroll handler dengan inersia: progres yang ditampilkan ("current")
-  // mengejar progres scroll sebenarnya ("target") dengan easing eksponensial,
-  // sehingga lonjakan roda mouse diredam dan kartu bergerak mulus.
   useEffect(() => {
     let rafId = null;
-    let target = 0; // progres sesuai posisi scroll sebenarnya
-    let current = 0; // progres yang ditampilkan (sudah dihaluskan)
+    let target = 0;
+    let current = 0;
     let lastTime = 0;
 
     const readTarget = () => {
@@ -557,7 +501,6 @@ export default function SunburstSection() {
         lastTime = 0;
         return;
       }
-      // easing eksponensial, independen dari frame rate
       current += diff * (1 - Math.exp(-dt / SMOOTHING_MS));
       render();
       rafId = requestAnimationFrame(tick);
@@ -591,8 +534,8 @@ export default function SunburstSection() {
           ref={stickyRef}
           className="sticky top-0 flex h-screen flex-col overflow-hidden bg-[#f4f0e7]"
         >
-          {/* Judul & subjudul ikut menempel (sticky) bersama visualisasi,
-              jadi selalu terlihat dalam satu frame. */}
+          {
+}
           <div className="max-w-story mx-auto flex shrink-0 flex-col gap-1 px-6 pb-1 pt-5 md:pt-7">
             <h2
               className="story-heading text-[#d74534]"
@@ -618,7 +561,7 @@ export default function SunburstSection() {
             </p>
           </div>
 
-          {/* Filter kelompok sektor: tanpa pilihan = semua */}
+          {}
           <div className="mx-auto flex shrink-0 flex-wrap items-center justify-center gap-1.5 px-6 pb-1 pt-1">
             <span className="mr-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5c564c]">
               Sektor
@@ -660,17 +603,13 @@ export default function SunburstSection() {
 
           <div ref={vizRef} className="relative mx-6 min-h-0 flex-1 md:mx-12" />
 
-          {/* Sumber data + petunjuk gulir */}
+          {}
           <div className="pointer-events-none flex shrink-0 flex-col items-center gap-0.5 px-6 pb-3 pt-1">
             <p className="text-[11px] text-[#5c564c]">Sumber data: {SOURCE}</p>
-            <p className="text-xs uppercase tracking-[0.2em] text-[#8b8577]">
-              {isComplete
-                ? "Gulir untuk lanjut ke bagian berikutnya"
-                : "Gulir untuk melanjutkan"}
-            </p>
+           
           </div>
 
-          {/* Tooltip hover: kategori, sub kategori, nilai PDRB */}
+          {}
           <div
             ref={tipRef}
             className="pointer-events-none absolute left-0 top-0 z-20 max-w-[280px] rounded-lg bg-white/95 px-3 py-2 shadow-lg opacity-0"
@@ -687,9 +626,9 @@ export default function SunburstSection() {
             <p ref={tipDetailRef} className="text-xs text-[#5c564c] mt-0.5" />
           </div>
 
-          {/* Kartu narasi — bergerak terus dari bawah ke atas via transform murni
-              (tanpa opacity/fade, tanpa berhenti), dengan jarak waktu antar
-              kartu supaya tidak pernah bertabrakan. */}
+          {
+
+}
           {cards.map((card, i) => (
             <div
               key={card.key}

@@ -1,46 +1,76 @@
 import { useEffect, useRef, useState } from "react";
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
 import * as THREE from "three";
 import "./PanoramaSection.css";
 
-/* ------------------------------------------------------------------ */
-/*  KONFIGURASI                                                        */
-/* ------------------------------------------------------------------ */
+const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
+const BG = "#f4f0e7";
 
-// Buka dengan ?debug di URL, lalu klik gambar untuk membaca yaw/pitch titik itu
-const DEBUG = new URLSearchParams(window.location.search).has("debug");
+// --- Globe ------------------------------------------------------------------
+const MIMIKA = [136.8872, -4.5467];
+const FIT_RATIO = 0.8;
+const MAX_START_ZOOM = 2.2;
+const MIN_START_ZOOM = 1;
+const END_ZOOM = 4.6;
 
-const IMAGE_URL = `${import.meta.env.BASE_URL}panorama.jpg`; // file di public/
+const fitZoom = (el) => {
+  const side = el ? Math.min(el.clientWidth, el.clientHeight) : 0;
+  if (!side) return 1.8;
+  const z = Math.log2((FIT_RATIO * side * Math.PI) / 512);
+  return Math.min(MAX_START_ZOOM, Math.max(MIN_START_ZOOM, z));
+};
 
-// Sudut dalam derajat. yaw: 0 = tengah gambar, positif = ke kanan.
-// pitch: 0 = garis horizon, positif = ke atas.
-const PIT = { yaw: 10, pitch: -9 }; // titik yang ditunjuk garis (lubang tambang)
+const clamp01 = (t) => Math.min(1, Math.max(0, t));
+const lerp = (a, b, t) => a + (b - a) * t;
+const easeInOutQuad = (t) =>
+  t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
-// Tiap langkah scroll = satu "patahan" kamera. `at` = posisi scroll (0..1) pemicunya.
+function createCityMarker(label, color) {
+  const el = document.createElement("div");
+  el.style.cssText =
+    "display:flex;flex-direction:column;align-items:center;gap:6px;pointer-events:none;";
+  const dot = document.createElement("div");
+  dot.style.cssText = `width:14px;height:14px;border-radius:50%;background:${color};box-shadow:0 0 0 4px color-mix(in srgb, ${color} 35%, transparent), 0 0 18px ${color};`;
+  const text = document.createElement("span");
+  text.textContent = label;
+  text.style.cssText =
+    "color:#fff;font-size:15px;font-weight:600;text-shadow:0 1px 6px rgba(0,0,0,.8);white-space:nowrap;";
+  el.append(dot, text);
+  return el;
+}
+
+// --- Panorama (tidak diubah) -----------------------------------------------
+const DEBUG =
+  typeof window !== "undefined" &&
+  new URLSearchParams(window.location.search).has("debug");
+
+const IMAGE_URL = `${import.meta.env.BASE_URL}panorama.jpg`;
+
+const PIT = { yaw: 10, pitch: -9 };
+
 const STEPS = [
-  { at: 0, yaw: 75, pitch: 4, fov: 90, callout: false }, // awal: menghadap kendaraan
-  { at: 0.22, yaw: 10, pitch: -4, fov: 85, callout: true }, // scroll 1: menoleh ke lubang
-  { at: 0.62, yaw: -45, pitch: 0, fov: 85, callout: false }, // scroll 2: geser lagi ke kiri
+  { at: 0, yaw: 75, pitch: 4, fov: 90, callout: false },
+  { at: 0.22, yaw: 10, pitch: -4, fov: 85, callout: true },
+  { at: 0.62, yaw: -45, pitch: 0, fov: 85, callout: false },
 ];
 
 const CALLOUT = {
   title: "Pertambangan",
-  text: "Hasil tambang menyumbang PDRB terbesar di Timika.", // tambahkan angka BPS-mu
-  dx: 150, // posisi kotak relatif terhadap titik (piksel); negatif = kiri/atas
+  text: "Hasil tambang menyumbang PDRB terbesar di Timika.",
+  dx: 150,
   dy: -190,
 };
 
 const TWEEN_MS = 1100;
 
-/* ------------------------------------------------------------------ */
-
 const rad = (d) => (d * Math.PI) / 180;
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
-const easeInOut = (t) =>
+const easeInOutCubic = (t) =>
   t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
 const shortest = (from, to) =>
   from + ((((to - from + 180) % 360) + 360) % 360) - 180;
 
-// Arah (yaw, pitch) -> vektor. Gambar tengah = arah -X, kanan = arah -Z.
 const toDir = (yaw, pitch, out) =>
   out.set(
     -Math.cos(rad(pitch)) * Math.cos(rad(yaw)),
@@ -50,29 +80,187 @@ const toDir = (yaw, pitch, out) =>
 
 const stepFor = (p) => STEPS.reduce((idx, s, i) => (p >= s.at ? i : idx), 0);
 
+// --- Penjadwalan scroll -----------------------------------------------------
+const GLOBE_INTRO_UNITS = 2.4;
+const FADE_UNITS = 0.6;
+const PANORAMA_UNITS = 2.6;
+const GLOBE_OUTRO_UNITS = 2.4;
+
+const INTRO_END = GLOBE_INTRO_UNITS;
+const FADE_IN_END = INTRO_END + FADE_UNITS;
+const PANORAMA_END = FADE_IN_END + PANORAMA_UNITS;
+const FADE_OUT_END = PANORAMA_END + FADE_UNITS;
+const TOTAL_UNITS = FADE_OUT_END + GLOBE_OUTRO_UNITS;
+
+function phaseState(raw) {
+  let globeP;
+  let globeOpacity;
+  let panoOpacity;
+
+  if (raw <= INTRO_END) {
+    globeP = clamp01(raw / GLOBE_INTRO_UNITS);
+    globeOpacity = 1;
+    panoOpacity = 0;
+  } else if (raw <= FADE_IN_END) {
+    globeP = 1;
+    const t = clamp01((raw - INTRO_END) / FADE_UNITS);
+    globeOpacity = 1 - t;
+    panoOpacity = t;
+  } else if (raw <= PANORAMA_END) {
+    globeP = 1;
+    globeOpacity = 0;
+    panoOpacity = 1;
+  } else if (raw <= FADE_OUT_END) {
+    globeP = 1;
+    const t = clamp01((raw - PANORAMA_END) / FADE_UNITS);
+    globeOpacity = t;
+    panoOpacity = 1 - t;
+  } else {
+    const t = clamp01((raw - FADE_OUT_END) / GLOBE_OUTRO_UNITS);
+    globeP = 1 - t;
+    globeOpacity = 1;
+    panoOpacity = 0;
+  }
+
+  const panoramaLocal = clamp01(
+    (raw - FADE_IN_END) / (PANORAMA_END - FADE_IN_END),
+  );
+
+  return { globeP, globeOpacity, panoOpacity, panoramaLocal };
+}
+
+// Gaya layout kritis dikunci inline supaya globe tetap punya ukuran
+// walaupun file CSS salah / belum termuat.
+const STAGE_STYLE = {
+  position: "absolute",
+  top: 0,
+  left: 0,
+  width: "100%",
+  height: "100%",
+};
+
 export default function PanoramaSection() {
-  const sectionRef = useRef(null);
-  const stageRef = useRef(null);
+  const wrapperRef = useRef(null);
+  const globeStageRef = useRef(null);
+  const panoStageRef = useRef(null);
+  const hintRef = useRef(null);
+
   const calloutRef = useRef(null);
   const lineRef = useRef(null);
   const dotRef = useRef(null);
   const boxRef = useRef(null);
   const infoRef = useRef(null);
+
+  const [mapboxError, setMapboxError] = useState(!TOKEN);
+  const [panoLoaded, setPanoLoaded] = useState(false);
+  const [panoFailed, setPanoFailed] = useState(false);
   const [step, setStep] = useState(0);
-  const [loaded, setLoaded] = useState(false);
-  const [failed, setFailed] = useState(false);
   const [clicked, setClicked] = useState("");
 
   useEffect(() => {
-    const host = stageRef.current;
+    const wrapper = wrapperRef.current;
+    const globeHost = globeStageRef.current;
+    const panoHost = panoStageRef.current;
+    if (!wrapper || !globeHost || !panoHost) return;
+
+    // =========================== GLOBE ===========================
+    let map = null;
+    let globeReady = false;
+    let globeStartZoom = fitZoom(globeHost);
+    let globeCurrent = 0;
+    let globeTarget = 0;
+    let globeRaf = null;
+
+    const renderGlobe = (p) => {
+      if (!map) return;
+      const zoom = lerp(globeStartZoom, END_ZOOM, easeInOutQuad(p));
+      map.jumpTo({ center: MIMIKA, zoom });
+    };
+
+    const tickGlobe = () => {
+      globeRaf = null;
+      const diff = globeTarget - globeCurrent;
+      globeCurrent =
+        Math.abs(diff) < 0.0006 ? globeTarget : globeCurrent + diff * 0.12;
+      renderGlobe(globeCurrent);
+      if (globeCurrent !== globeTarget) {
+        globeRaf = requestAnimationFrame(tickGlobe);
+      }
+    };
+    const requestGlobeTick = () => {
+      if (globeReady && globeRaf === null) {
+        globeRaf = requestAnimationFrame(tickGlobe);
+      }
+    };
+
+    let globeRO = null;
+
+    if (TOKEN) {
+      mapboxgl.accessToken = TOKEN;
+
+      map = new mapboxgl.Map({
+        container: globeHost,
+        style: "mapbox://styles/mapbox/satellite-v9",
+        projection: "globe",
+        center: MIMIKA,
+        zoom: globeStartZoom,
+        interactive: false,
+        attributionControl: false,
+        fadeDuration: 0,
+      });
+      map.addControl(
+        new mapboxgl.AttributionControl({ compact: true }),
+        "bottom-right",
+      );
+
+      map.on("style.load", () => {
+        map.setFog({
+          color: BG,
+          "high-color": BG,
+          "space-color": BG,
+          "horizon-blend": 0.02,
+          "star-intensity": 0,
+        });
+
+        new mapboxgl.Marker({
+          element: createCityMarker("Mimika", "#ff8a3d"),
+          anchor: "top",
+        })
+          .setLngLat(MIMIKA)
+          .addTo(map);
+
+        globeReady = true;
+        map.resize();
+        globeStartZoom = fitZoom(globeHost);
+        globeCurrent = globeTarget;
+        renderGlobe(globeCurrent);
+        requestGlobeTick();
+      });
+
+      map.on("error", (e) => {
+        console.error("Mapbox error:", e?.error);
+        if (e?.error?.status === 401) setMapboxError(true);
+      });
+
+      // Pastikan canvas mapbox selalu mengikuti ukuran container
+      globeRO = new ResizeObserver(() => {
+        if (!map) return;
+        map.resize();
+        globeStartZoom = fitZoom(globeHost);
+        if (globeReady) renderGlobe(globeCurrent);
+      });
+      globeRO.observe(globeHost);
+    }
+
+    // =========================== PANORAMA ===========================
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
-    host.appendChild(renderer.domElement);
+    panoHost.appendChild(renderer.domElement);
 
     const scene = new THREE.Scene();
     const camera = new THREE.PerspectiveCamera(STEPS[0].fov, 1, 0.1, 1100);
     const geometry = new THREE.SphereGeometry(500, 64, 40);
-    geometry.scale(-1, 1, 1); // lihat bola dari dalam
+    geometry.scale(-1, 1, 1);
     const material = new THREE.MeshBasicMaterial();
     scene.add(new THREE.Mesh(geometry, material));
 
@@ -85,19 +273,18 @@ export default function PanoramaSection() {
     const fwd = new THREE.Vector3();
     const pitDir = toDir(PIT.yaw, PIT.pitch, new THREE.Vector3());
     const pitPoint = new THREE.Vector3();
-    let size = { w: 1, h: 1 };
+    let panoSize = { w: 1, h: 1 };
     let currentStep = -1;
-    let raf = 0;
+    let panoRaf = 0;
 
-    const draw = () => {
+    const drawPano = () => {
       toDir(view.yaw, view.pitch, dir);
       camera.fov = view.fov;
       camera.updateProjectionMatrix();
       camera.lookAt(dir);
       renderer.render(scene, camera);
 
-      // Posisi titik tambang di layar -> garis + kotak
-      const { w, h } = size;
+      const { w, h } = panoSize;
       camera.getWorldDirection(fwd);
       const callout = calloutRef.current;
       if (callout) {
@@ -113,11 +300,11 @@ export default function PanoramaSection() {
           const bh = box.offsetHeight;
           let bx = ax + CALLOUT.dx;
           let by = ay + CALLOUT.dy;
-          if (bx + bw > w - 16) bx = ax - CALLOUT.dx - bw; // balik ke kiri bila mepet kanan
-          if (by < 16) by = ay - CALLOUT.dy; // balik ke bawah bila mepet atas
+          if (bx + bw > w - 16) bx = ax - CALLOUT.dx - bw;
+          if (by < 16) by = ay - CALLOUT.dy;
           bx = clamp(bx, 16, w - bw - 16);
           by = clamp(by, 16, h - bh - 16);
-          const cx = ax < bx + bw / 2 ? bx : bx + bw; // sudut kotak terdekat
+          const cx = ax < bx + bw / 2 ? bx : bx + bw;
           const cy = ay < by + bh / 2 ? by : by + bh;
           box.style.transform = `translate(${bx}px, ${by}px)`;
           lineRef.current.setAttribute("x1", ax);
@@ -133,48 +320,34 @@ export default function PanoramaSection() {
       }
     };
 
-    // Satu patahan kamera: gerak cepat lalu berhenti
-    const reduce = window.matchMedia(
+    const reduceMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
     const animateTo = (t) => {
-      cancelAnimationFrame(raf);
+      cancelAnimationFrame(panoRaf);
       const from = { ...view };
       const to = { yaw: shortest(from.yaw, t.yaw), pitch: t.pitch, fov: t.fov };
-      const dur = reduce ? 0 : TWEEN_MS;
+      const dur = reduceMotion ? 0 : TWEEN_MS;
       const t0 = performance.now();
       const tick = (now) => {
         const k = dur ? Math.min(1, (now - t0) / dur) : 1;
-        const e = easeInOut(k);
+        const e = easeInOutCubic(k);
         view.yaw = from.yaw + (to.yaw - from.yaw) * e;
         view.pitch = from.pitch + (to.pitch - from.pitch) * e;
         view.fov = from.fov + (to.fov - from.fov) * e;
-        draw();
-        if (k < 1) raf = requestAnimationFrame(tick);
+        drawPano();
+        if (k < 1) panoRaf = requestAnimationFrame(tick);
       };
-      raf = requestAnimationFrame(tick);
+      panoRaf = requestAnimationFrame(tick);
     };
 
-    // Scroll hanya memicu langkah; tidak menggeser kamera secara halus
-    const onScroll = () => {
-      const r = sectionRef.current.getBoundingClientRect();
-      const total = r.height - window.innerHeight;
-      const idx = stepFor(clamp(-r.top / total, 0, 1));
-      if (idx !== currentStep) {
-        currentStep = idx;
-        setStep(idx);
-        animateTo(STEPS[idx]);
-      }
-    };
-    window.addEventListener("scroll", onScroll, { passive: true });
-
-    const ro = new ResizeObserver(([e]) => {
-      size = { w: e.contentRect.width, h: e.contentRect.height };
-      renderer.setSize(size.w, size.h);
-      camera.aspect = size.w / size.h;
-      draw();
+    const ro = new ResizeObserver(([entry]) => {
+      panoSize = { w: entry.contentRect.width, h: entry.contentRect.height };
+      renderer.setSize(panoSize.w, panoSize.h);
+      camera.aspect = panoSize.w / panoSize.h;
+      drawPano();
     });
-    ro.observe(host);
+    ro.observe(panoHost);
 
     new THREE.TextureLoader().load(
       IMAGE_URL,
@@ -183,12 +356,12 @@ export default function PanoramaSection() {
         tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
         material.map = tex;
         material.needsUpdate = true;
-        setLoaded(true);
-        draw();
-        onScroll();
+        setPanoLoaded(true);
+        drawPano();
+        handleScroll();
       },
       undefined,
-      () => setFailed(true),
+      () => setPanoFailed(true),
     );
 
     if (DEBUG) {
@@ -206,24 +379,111 @@ export default function PanoramaSection() {
       });
     }
 
+    // ======================= SCROLL HANDLER =========================
+    const computeRaw = () => {
+      const rect = wrapper.getBoundingClientRect();
+      const scrollable = Math.max(1, rect.height - window.innerHeight);
+      const progress = clamp01(-rect.top / scrollable);
+      return progress * TOTAL_UNITS;
+    };
+
+    function handleScroll() {
+      const raw = computeRaw();
+      const { globeP, globeOpacity, panoOpacity, panoramaLocal } =
+        phaseState(raw);
+
+      globeTarget = globeP;
+      requestGlobeTick();
+
+      globeHost.style.opacity = String(globeOpacity);
+      globeHost.style.pointerEvents = globeOpacity > 0.5 ? "auto" : "none";
+      panoHost.style.opacity = String(panoOpacity);
+
+      if (calloutRef.current) {
+        calloutRef.current.style.opacity = String(panoOpacity);
+      }
+
+      const idx = stepFor(panoramaLocal);
+      if (idx !== currentStep) {
+        currentStep = idx;
+        setStep(idx);
+        animateTo(STEPS[idx]);
+      }
+
+      if (hintRef.current) {
+        hintRef.current.style.opacity = raw < 0.08 ? "1" : "0";
+      }
+    }
+
+    const onResize = () => {
+      globeStartZoom = fitZoom(globeHost);
+      if (map) map.resize();
+      if (globeReady) renderGlobe(globeCurrent);
+      handleScroll();
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    window.addEventListener("resize", onResize);
+
     return () => {
-      cancelAnimationFrame(raf);
-      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("scroll", handleScroll);
+      window.removeEventListener("resize", onResize);
+      if (globeRaf !== null) cancelAnimationFrame(globeRaf);
+      cancelAnimationFrame(panoRaf);
+      if (globeRO) globeRO.disconnect();
       ro.disconnect();
       material.map?.dispose();
       material.dispose();
       geometry.dispose();
       renderer.dispose();
       renderer.domElement.remove();
+      if (map) map.remove();
     };
   }, []);
 
-  const live = loaded && STEPS[step].callout;
+  const live = panoLoaded && STEPS[step].callout;
 
   return (
-    <section className="pa-section" ref={sectionRef} aria-labelledby="pa-title">
-      <div className="pa-sticky">
-        <div className="pa-stage" ref={stageRef} />
+    <section
+      className="pa-section"
+      ref={wrapperRef}
+      style={{ position: "relative", height: `${TOTAL_UNITS * 100}vh` }}
+    >
+      <div
+        className="pa-sticky"
+        style={{
+          position: "sticky",
+          top: 0,
+          height: "100vh",
+          width: "100%",
+          overflow: "hidden",
+          background: BG,
+        }}
+      >
+        <div
+          className="pa-stage-globe"
+          ref={globeStageRef}
+          style={{ ...STAGE_STYLE, zIndex: 1 }}
+        >
+          {mapboxError && (
+            <div className="pa-msg" style={{ color: "#2b2a27" }}>
+              Token Mapbox belum diatur / tidak valid. Tambahkan
+              VITE_MAPBOX_TOKEN di file .env, lalu restart dev server.
+            </div>
+          )}
+        </div>
+
+        <div
+          className="pa-stage-pano"
+          ref={panoStageRef}
+          style={{
+            ...STAGE_STYLE,
+            zIndex: 2,
+            opacity: 0,
+            pointerEvents: "none",
+          }}
+        />
 
         <div className={`pa-callout${live ? " is-live" : ""}`} ref={calloutRef}>
           <svg className="pa-svg" aria-hidden="true">
@@ -236,12 +496,20 @@ export default function PanoramaSection() {
           </div>
         </div>
 
-        {!loaded && !failed && <div className="pa-msg">Memuat panorama…</div>}
-        {failed && (
-          <div className="pa-msg">
-            Gambar tidak ditemukan. Pastikan ada di public/panorama.png.
+        {!panoLoaded && !panoFailed && (
+          <div className="pa-msg" style={{ opacity: 0.85 }}>
+            Memuat panorama…
           </div>
         )}
+        {panoFailed && (
+          <div className="pa-msg">
+            Gambar tidak ditemukan. Pastikan ada di public/panorama.jpg.
+          </div>
+        )}
+
+        <div className="pa-hint" ref={hintRef}>
+          Gulir untuk mulai ↓
+        </div>
 
         {DEBUG && (
           <div className="pa-debug">

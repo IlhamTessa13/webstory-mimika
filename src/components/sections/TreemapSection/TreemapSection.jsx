@@ -1,8 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
 
-// Data PDRB per wilayah (kabupaten) x kategori (Primer/Sekunder/Tersier),
-// bersumber dari data/pdrb_data.xlsx. Satuan: miliar rupiah.
 const pdrbData = {
   name: "PDRB Papua Tengah",
   children: [
@@ -73,28 +71,22 @@ const pdrbData = {
   ],
 };
 
-// Palet Okabe–Ito — standar "Color Universal Design", aman untuk hampir
-// semua jenis buta warna (protanopia, deuteranopia, tritanopia).
-// Satu warna per wilayah (8 kabupaten).
 const REGION_COLORS = [
-  "#E69F00", // oranye          — Deiyai
-  "#56B4E9", // biru langit     — Dogiyai
-  "#009E73", // hijau kebiruan  — Intan Jaya
-  "#0072B2", // biru            — Mimika
-  "#D55E00", // vermillion      — Nabire
-  "#CC79A7", // ungu kemerahan  — Paniai
-  "#F0E442", // kuning          — Puncak
-  "#999999", // abu-abu netral  — Puncak Jaya
+  "#E69F00",
+  "#56B4E9",
+  "#009E73",
+  "#0072B2",
+  "#D55E00",
+  "#CC79A7",
+  "#F0E442",
+  "#999999",
 ];
 
-// Hanya dua wilayah terbesar yang kotaknya cukup lega untuk menampilkan
-// angka nilai di tiap kategori. Enam kabupaten lain cukup nama kategorinya.
 const REGIONS_WITH_VALUES = ["Mimika", "Nabire"];
 
 const BG_CREAM = "#f4f0e7";
 const SOURCE = "Badan Pusat Statistik";
 
-// Mode 1 kabupaten: satu kotak besar berukuran tetap di tengah.
 const UNIFORM_GAP = 10;
 const UNIFORM_MAX_W = 680;
 const UNIFORM_MAX_H = 480;
@@ -120,9 +112,6 @@ function getContrastText(hex) {
   return yiq >= 150 ? "#2b2b2b" : "#ffffff";
 }
 
-// Perkirakan ukuran font terbesar yang masih muat di lebar kotak, supaya
-// label wilayah/kategori tidak tumpang tindih dengan tetangganya.
-// charWidthRatio dinaikkan (font bold lebih lebar dari perkiraan lama).
 function fitFontSize(
   text,
   maxWidthPx,
@@ -133,7 +122,6 @@ function fitFontSize(
   return Math.max(min, Math.min(max, estimate));
 }
 
-// Jadikan string aman dipakai sebagai id SVG (tanpa spasi/karakter aneh)
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
 const regionNames = pdrbData.children.map((r) => r.name);
@@ -153,8 +141,6 @@ const mimikaValue = (cat) =>
     .find((r) => r.name === "Mimika")
     .children.find((c) => c.name === cat).value;
 
-// Kartu narasi, berurutan: overview Mimika, lalu 3 kategori sektornya.
-// Isi dihitung dari seluruh data, tidak terpengaruh filter.
 const CARDS = [
   {
     key: "mimika",
@@ -182,38 +168,23 @@ const CARDS = [
   },
 ];
 
-// --- Penjadwalan scroll: setiap kartu bergerak terus-menerus dari bawah
-// layar ke atas layar tanpa berhenti. Kartu diberi jarak waktu (CARD_STAGGER)
-// sehingga jarak vertikal antar kartu selalu lebih besar dari tinggi kartu
-// -> tidak pernah tabrakan.
-//
-// Jarak antar kartu (vh) = (2 * TRAVEL_VH) * CARD_STAGGER / CARD_DURATION
-//   = 240 * 1.1 / 3.0 = 88vh  (tinggi kartu sekitar 30-40vh, jadi aman)
-const NEUTRAL_DURATION = 0.5; // jeda awal: treemap polos, belum ada kartu
-const CARD_DURATION = 3.0; // lama 1 kartu menempuh bawah -> atas. Makin besar, makin pelan
-const CARD_STAGGER = 1.1; // selisih waktu mulai antar kartu. Makin besar, makin renggang
-const TRAVEL_VH = 120; // kartu mulai di +120vh (bawah) dan berakhir di -120vh (atas)
+const NEUTRAL_DURATION = 0.5;
+const CARD_DURATION = 3.0;
+const CARD_STAGGER = 1.1;
+const TRAVEL_VH = 120;
 const TOTAL_UNITS =
   NEUTRAL_DURATION + (CARDS.length - 1) * CARD_STAGGER + CARD_DURATION;
 
-// Kehalusan inersia scroll (ms): makin besar -> makin halus/lambat.
 const SMOOTHING_MS = 280;
 
 const sceneStart = (i) => NEUTRAL_DURATION + i * CARD_STAGGER;
 
-// Offset vertikal kartu ke-i (dalam vh) relatif terhadap posisi tengah layar.
-// Gerak linear (kecepatan konstan) -> kartu melewati tengah tanpa berhenti.
 function cardOffsetVh(raw, i) {
   const t = (raw - sceneStart(i)) / CARD_DURATION;
   const clamped = Math.min(1, Math.max(0, t));
   return TRAVEL_VH - 2 * TRAVEL_VH * clamped;
 }
 
-// Susun tata letak.
-// - Tanpa filter, atau 2+ kabupaten dipilih: treemap PROPORSIONAL (ukuran
-//   tiap kabupaten sebanding dengan PDRB-nya).
-// - Tepat 1 kabupaten dipilih: satu kotak besar di tengah; di dalamnya
-//   Primer/Sekunder/Tersier dibagi proporsional menurut nilainya.
 function buildLayout(width, height, selected) {
   const makeTreemap = (w, h) =>
     d3
@@ -243,14 +214,13 @@ function buildLayout(width, height, selected) {
       regions: root.children,
       leaves: root.leaves(),
       uniform: false,
-      showValues: selected.length > 1, // saat membandingkan, angka tampil bila muat
+      showValues: selected.length > 1,
     };
   }
 
   const list = pdrbData.children.filter((r) => selected.includes(r.name));
   const n = list.length;
 
-  // Pilih jumlah baris yang membuat tiap kotak mendekati proporsi nyaman.
   let best = { rows: 1, cols: n, score: Infinity };
   for (let rows = 1; rows <= n; rows += 1) {
     const cols = Math.ceil(n / rows);
@@ -284,7 +254,6 @@ function buildLayout(width, height, selected) {
   list.forEach((r, i) => {
     const row = Math.floor(i / cols);
     const col = i % cols;
-    // Baris terakhir yang tidak penuh diratakan ke tengah.
     const inRow = row === rows - 1 ? n - cols * (rows - 1) : cols;
     const rowShift = ((cols - inRow) * (cellW + UNIFORM_GAP)) / 2;
     const x0 = originX + rowShift + col * (cellW + UNIFORM_GAP);
@@ -327,15 +296,13 @@ export default function TreemapSection() {
   const cardRefs = useRef([]);
   const drawnRef = useRef(false);
   const [isComplete, setIsComplete] = useState(false);
-  const [selRegions, setSelRegions] = useState([]); // kosong = semua kabupaten
+  const [selRegions, setSelRegions] = useState([]);
 
   const toggleRegion = (name) =>
     setSelRegions((prev) =>
       prev.includes(name) ? prev.filter((v) => v !== name) : [...prev, name],
     );
 
-  // Gambar treemap. Dipanggil sekali saat mount, dan lagi saat ukuran
-  // kontainer berubah (resize) — bukan setiap tick scroll.
   useEffect(() => {
     const el = vizRef.current;
     if (!el) return;
@@ -355,7 +322,6 @@ export default function TreemapSection() {
         .attr("width", width)
         .attr("height", height);
 
-      // Redraw karena filter: pudar masuk singkat agar tidak terasa patah.
       if (drawnRef.current) {
         svg.style("opacity", 0).transition().duration(350).style("opacity", 1);
       }
@@ -380,8 +346,6 @@ export default function TreemapSection() {
         .attr("stroke-width", 1.5)
         .attr("rx", 6);
 
-      // clipPath per wilayah supaya teks label TIDAK PERNAH bocor keluar
-      // dari kotaknya sendiri ke kotak tetangga, walau kotaknya sempit.
       regions.each(function regionLabel(d) {
         const w = d.x1 - d.x0;
         const h = d.y1 - d.y0;
@@ -436,9 +400,6 @@ export default function TreemapSection() {
           )} dari PDRB ${d.parent.data.name})`;
         });
 
-      // Label kategori. Font menyesuaikan lebar DAN tinggi kotak; kotak
-      // sempit & tinggi otomatis memakai teks vertikal. Selalu di-clip
-      // supaya tidak bocor ke luar kotaknya sendiri.
       leaves.each(function labelLeaf(d) {
         const w = d.x1 - d.x0;
         const h = d.y1 - d.y0;
@@ -458,7 +419,6 @@ export default function TreemapSection() {
         const textColor = getContrastText(regionColor(d.parent.data.name));
         const g = d3.select(this).attr("clip-path", `url(#${clipId})`);
 
-        // Ukuran font bila teks horizontal: dibatasi lebar DAN tinggi
         const horizontalSize = Math.min(
           fitFontSize(name, w - PAD * 2, {
             max: uniform ? 16 : 11,
@@ -467,15 +427,14 @@ export default function TreemapSection() {
           (h - PAD * 2) / 1.2,
         );
 
-        // Kotak sempit & tinggi → teks diputar vertikal
         const useVertical = horizontalSize < 5.5 && h > w * 1.3;
 
         if (useVertical) {
           const vSize = Math.max(
             3,
             Math.min(
-              fitFontSize(name, h - PAD * 2, { max: 11, min: 3.5 }), // panjang teks muat di tinggi
-              (w - PAD * 2) / 1.2, // ketebalan teks muat di lebar
+              fitFontSize(name, h - PAD * 2, { max: 11, min: 3.5 }),
+              (w - PAD * 2) / 1.2,
             ),
           );
           g.append("text")
@@ -488,7 +447,7 @@ export default function TreemapSection() {
             .style("font-size", `${vSize}px`)
             .style("font-weight", 600)
             .text(name);
-          return; // kotak sempit tidak menampilkan nilai
+          return;
         }
 
         const nameFontSize = Math.max(3, horizontalSize);
@@ -531,13 +490,10 @@ export default function TreemapSection() {
     return () => window.removeEventListener("resize", draw);
   }, [selRegions]);
 
-  // Scroll handler dengan inersia: progres yang ditampilkan ("current")
-  // mengejar progres scroll sebenarnya ("target") dengan easing eksponensial,
-  // sehingga lonjakan roda mouse diredam dan kartu bergerak mulus.
   useEffect(() => {
     let rafId = null;
-    let target = 0; // progres sesuai posisi scroll sebenarnya
-    let current = 0; // progres yang ditampilkan (sudah dihaluskan)
+    let target = 0;
+    let current = 0;
     let lastTime = 0;
 
     const readTarget = () => {
@@ -575,7 +531,6 @@ export default function TreemapSection() {
         lastTime = 0;
         return;
       }
-      // easing eksponensial, independen dari frame rate
       current += diff * (1 - Math.exp(-dt / SMOOTHING_MS));
       render();
       rafId = requestAnimationFrame(tick);
@@ -606,7 +561,7 @@ export default function TreemapSection() {
         style={{ height: `${TOTAL_UNITS * 100}vh` }}
       >
         <div className="sticky top-0 flex h-screen flex-col overflow-hidden bg-[#f4f0e7]">
-          {/* Judul, subjudul, filter, dan grafik menempel dalam satu layar. */}
+          {}
           <div className="max-w-story mx-auto flex shrink-0 flex-col gap-1 px-6 pb-1 pt-5 md:pt-7">
             <h2
               className="story-heading text-[#d74534]"
@@ -632,7 +587,7 @@ export default function TreemapSection() {
             </p>
           </div>
 
-          {/* Filter kabupaten: tanpa pilihan = semua */}
+          {}
           <div className="mx-auto flex shrink-0 flex-wrap items-center justify-center gap-1.5 px-6 pb-1 pt-1">
             <span className="mr-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5c564c]">
               Kabupaten
@@ -677,19 +632,15 @@ export default function TreemapSection() {
             <div ref={vizRef} className="absolute inset-0" />
           </div>
 
-          {/* Sumber data + petunjuk gulir */}
+          {}
           <div className="pointer-events-none flex shrink-0 flex-col items-center gap-0.5 px-6 pb-3 pt-1">
             <p className="text-[11px] text-[#5c564c]">Sumber data: {SOURCE}</p>
-            <p className="text-xs uppercase tracking-[0.2em] text-[#8b8577]">
-              {isComplete
-                ? "Gulir untuk lanjut ke bagian berikutnya"
-                : "Gulir untuk melanjutkan"}
-            </p>
+ 
           </div>
 
-          {/* Kartu narasi — masuk/keluar dari bawah via transform murni
-              (tanpa opacity/fade), berhenti tepat di tengah layar, dan
-              dijadwalkan berurutan supaya tidak pernah tumpang tindih. */}
+          {
+
+}
           {CARDS.map((card, i) => (
             <div
               key={card.key}

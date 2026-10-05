@@ -1,11 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import * as d3 from "d3";
 
-// ---------------------------------------------------------------------------
-// Data timeline ekspor Kabupaten Mimika 2025, bersumber dari
-// data/data_ganttchart.xlsx. Format baris: [Negara, Bulan, Nilai Ekspor].
-// Satuan nilai mengikuti file sumber; ubah UNIT bila bukan dolar AS.
-// ---------------------------------------------------------------------------
 const UNIT = "US$";
 const YEAR = 2025;
 const SOURCE = "Badan Pusat Statistik";
@@ -64,9 +59,6 @@ const MONTHS = [
 ];
 const MONTH_INDEX = Object.fromEntries(MONTHS.map(([full], i) => [full, i]));
 
-// Warna: skala sekuensial YlGnBu (ColorBrewer, aman untuk buta warna).
-// Makin gelap/biru = nilai ekspor bulan itu makin besar. Nilai juga dikodekan
-// lewat tinggi batang, jadi informasi tidak bergantung pada warna saja.
 const colorRamp = (t) => d3.interpolateYlGnBu(0.18 + 0.82 * t);
 
 const INK = "#2b2b2b";
@@ -86,7 +78,6 @@ const moneyFmt = (v) => {
   return `${UNIT} ${v.toLocaleString("id-ID", { maximumFractionDigits: 2 })}`;
 };
 
-// --- Susun model dari baris data ---
 function buildModel(rows) {
   const entries = [];
   rows.forEach(([negara, bulan, nilai]) => {
@@ -122,8 +113,6 @@ function buildModel(rows) {
   return { entries, countries, total, maxValue, monthTotals };
 }
 
-// --- Kartu interpretasi (dihitung dari seluruh data setahun, tidak
-// terpengaruh filter periode) ---
 function buildCards(model) {
   const { countries, total, monthTotals } = model;
   const pct = (v, t = total) => pctFmt((v / t) * 100);
@@ -177,7 +166,6 @@ function buildCards(model) {
   ];
 }
 
-// --- Penjadwalan scroll (sama seperti SankeySection) ---
 const CARD_COUNT = 3;
 const NEUTRAL_DURATION = 0.5;
 const CARD_DURATION = 3.0;
@@ -234,8 +222,8 @@ export default function GanttSection() {
   const tipDetailRef = useRef(null);
 
   const [isComplete, setIsComplete] = useState(false);
-  const [from, setFrom] = useState(0); // indeks bulan awal (Januari)
-  const [to, setTo] = useState(11); // indeks bulan akhir (Desember)
+  const [from, setFrom] = useState(0);
+  const [to, setTo] = useState(11);
 
   const model = useMemo(() => buildModel(RAW_ROWS), []);
   const cards = useMemo(() => buildCards(model), [model]);
@@ -246,7 +234,6 @@ export default function GanttSection() {
     [model, from, to],
   );
 
-  // Menjaga from <= to.
   const changeFrom = (v) => {
     setFrom(v);
     if (v > to) setTo(v);
@@ -280,7 +267,6 @@ export default function GanttSection() {
     if (tipRef.current) tipRef.current.style.opacity = "0";
   };
 
-  // Gambar gantt chart. Dipanggil saat periode berubah dan saat ukuran berubah.
   useEffect(() => {
     const el = vizRef.current;
     if (!el) return undefined;
@@ -352,7 +338,6 @@ export default function GanttSection() {
 
       const g = svg.append("g").attr("clip-path", `url(#${CLIP_ID})`);
 
-      // --- Pita latar bulan selang-seling + garis bantu + label bulan ---
       const showFull = x.bandwidth() > 64;
       const showShort = x.bandwidth() > 24;
       const axis = g.append("g");
@@ -383,7 +368,6 @@ export default function GanttSection() {
           );
       });
 
-      // --- Jalur tiap negara (hover = highlight manual baris) ---
       let trackSel;
       let barSel;
       let labelSel;
@@ -427,7 +411,6 @@ export default function GanttSection() {
           hideTip();
         });
 
-      // --- Label negara ---
       labelSel = g
         .append("g")
         .attr("pointer-events", "none")
@@ -444,7 +427,6 @@ export default function GanttSection() {
         .style("font-weight", 700)
         .text((d) => d.label);
 
-      // --- Batang bulanan (hanya bulan dalam periode terpilih) ---
       const barData = model.entries.filter((e) => e.m >= from && e.m <= to);
       barSel = g
         .append("g")
@@ -488,7 +470,6 @@ export default function GanttSection() {
           .text("Tidak ada ekspor tercatat pada periode ini.");
       }
 
-      // --- Animasi masuk kiri -> kanan ---
       const render = () => {
         clipRect.attr("width", sweep * width);
       };
@@ -538,7 +519,6 @@ export default function GanttSection() {
     if (controlRef.current) controlRef.current.sync();
   }, [isComplete]);
 
-  // Scroll dengan inersia: menggerakkan kartu interpretasi.
   useEffect(() => {
     let rafId = null;
     let target = 0;
@@ -600,7 +580,6 @@ export default function GanttSection() {
     };
   }, []);
 
-  // Gradasi legenda warna
   const gradient = useMemo(
     () =>
       `linear-gradient(to right, ${d3
@@ -621,7 +600,7 @@ export default function GanttSection() {
           ref={stickyRef}
           className="sticky top-0 flex h-screen flex-col overflow-hidden bg-[#f4f0e7]"
         >
-          {/* Judul, subjudul, filter, dan grafik menempel dalam satu layar. */}
+          {}
           <div className="max-w-story mx-auto flex shrink-0 flex-col gap-1 px-6 pb-1 pt-5 md:pt-7">
             <h2
               className="story-heading text-[#d74534]"
@@ -648,7 +627,7 @@ export default function GanttSection() {
             </p>
           </div>
 
-          {/* Filter periode */}
+          {}
           <div className="mx-auto flex shrink-0 flex-wrap items-center justify-center gap-x-5 gap-y-1.5 px-6 pb-1 pt-1">
             <MonthSelect label="Dari" value={from} onChange={changeFrom} />
             <MonthSelect label="Sampai" value={to} onChange={changeTo} />
@@ -671,7 +650,7 @@ export default function GanttSection() {
 
           <div ref={vizRef} className="relative mx-6 min-h-0 flex-1 md:mx-12" />
 
-          {/* Legenda warna, sumber data, petunjuk gulir */}
+          {}
           <div className="pointer-events-none flex shrink-0 flex-col items-center gap-1 px-6 pb-3 pt-2">
             <div className="flex items-center gap-2 text-[11px] text-[#5c564c]">
               <span>Nilai ekspor per bulan: rendah</span>
@@ -682,14 +661,10 @@ export default function GanttSection() {
               <span>tinggi ({moneyFmt(model.maxValue)})</span>
             </div>
             <p className="text-[11px] text-[#5c564c]">Sumber data: {SOURCE}</p>
-            <p className="text-xs uppercase tracking-[0.2em] text-[#8b8577]">
-              {isComplete
-                ? "Gulir untuk lanjut ke bagian berikutnya"
-                : "Gulir untuk melanjutkan"}
-            </p>
+
           </div>
 
-          {/* Tooltip hover */}
+          {}
           <div
             ref={tipRef}
             className="pointer-events-none absolute left-0 top-0 z-20 max-w-[300px] rounded-lg bg-white/95 px-3 py-2 opacity-0 shadow-lg"
@@ -706,7 +681,7 @@ export default function GanttSection() {
             <p ref={tipDetailRef} className="mt-0.5 text-xs text-[#5c564c]" />
           </div>
 
-          {/* Kartu interpretasi */}
+          {}
           {cards.map((card, i) => (
             <div
               key={card.key}

@@ -2,24 +2,19 @@ import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-
-
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
-const BG = "#f4f0e7"; 
+const BG = "#f4f0e7";
 
 const JAKARTA = [106.8456, -6.2088];
 const MIMIKA = [136.8872, -4.5467];
 
-
 const PLANE_ROTATION_OFFSET = 90;
-const PLANE_SIZE = 56; // px
-
+const PLANE_SIZE = 56;
 
 const FIT_RATIO = 0.8;
 const MAX_START_ZOOM = 2.2;
 const MIN_START_ZOOM = 1;
-
 
 const fitZoom = (el) => {
   const side = el ? Math.min(el.clientWidth, el.clientHeight) : 0;
@@ -28,16 +23,14 @@ const fitZoom = (el) => {
   return Math.min(MAX_START_ZOOM, Math.max(MIN_START_ZOOM, z));
 };
 
-const END_ZOOM = 4.6; 
-
+const END_ZOOM = 4.6;
 
 const CURVE = 0.22;
-
 
 const FLIGHT_SHARE = 0.94;
 
 const IN_MS = 520;
-const OUT_MS = 450; 
+const OUT_MS = 450;
 
 function greatCircle(a, b, steps) {
   const rad = (d) => (d * Math.PI) / 180;
@@ -70,8 +63,6 @@ function greatCircle(a, b, steps) {
   return pts;
 }
 
-// Rute melengkung: lingkaran besar yang "digelembungkan" tegak lurus terhadap
-// garis lurus asal–tujuan. Bulge paling tinggi di tengah, nol di ujung-ujungnya.
 function curvedRoute(a, b, steps = 240) {
   const base = greatCircle(a, b, steps);
   const dx = b[0] - a[0];
@@ -87,7 +78,6 @@ function curvedRoute(a, b, steps = 240) {
 }
 
 const ROUTE = curvedRoute(JAKARTA, MIMIKA);
-
 
 function pointAt(t) {
   const clamped = Math.min(1, Math.max(0, t));
@@ -107,7 +97,6 @@ const clamp01 = (t) => Math.min(1, Math.max(0, t));
 const easeInOut = (t) =>
   t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 const lerp = (a, b, t) => a + (b - a) * t;
-
 
 function createCityMarker(label, color) {
   const el = document.createElement("div");
@@ -136,8 +125,6 @@ export default function FlightTransition() {
     if (!TOKEN) return;
     mapboxgl.accessToken = TOKEN;
 
-    // Zoom awal & akhir (zoom-out masuk dan zoom-out keluar) — disesuaikan
-    // dengan ukuran layar supaya globe tidak terpotong.
     let startZoom = fitZoom(containerRef.current);
 
     const map = new mapboxgl.Map({
@@ -146,7 +133,7 @@ export default function FlightTransition() {
       projection: "globe",
       center: JAKARTA,
       zoom: startZoom,
-      interactive: false, 
+      interactive: false,
       attributionControl: false,
       fadeDuration: 0,
     });
@@ -155,23 +142,21 @@ export default function FlightTransition() {
       "bottom-right",
     );
 
-    
     let ready = false;
-    let target = 0; 
+    let target = 0;
     let current = 0;
     let outro = 0;
     let outroTarget = 0;
     let raf = null;
 
-    let aligned = false; 
+    let aligned = false;
     let planeShown = false;
-    let vanishing = false; 
-    let done = false; 
-    let locked = false; 
+    let vanishing = false;
+    let done = false;
+    let locked = false;
     let lockY = 0;
     let vanishTimer = null;
 
-   
     const planeEl = document.createElement("div");
     const popEl = document.createElement("div");
     popEl.style.cssText = `position:relative;width:${PLANE_SIZE}px;height:${PLANE_SIZE}px;opacity:0;transform:scale(0);`;
@@ -228,7 +213,6 @@ export default function FlightTransition() {
       burst();
     };
 
-   
     const syncVisibility = () => {
       const want = aligned && !done && !vanishing;
       if (want && !planeShown) {
@@ -247,35 +231,29 @@ export default function FlightTransition() {
       vanishTimer = setTimeout(() => {
         vanishing = false;
         done = true;
-        outroTarget = 1; 
-        requestTick(); 
+        outroTarget = 1;
+        requestTick();
       }, OUT_MS + 80);
     };
 
-    
     const render = (p) => {
       const { point, index } = pointAt(p);
 
-      // Kamera mengikuti rute, lalu perlahan kembali ke tampilan awal saat outro
       const camP = pointAt(0.12 + 0.76 * p).point;
       const o = easeInOut(outro);
       const cam = [
         lerp(camP[0], OUTRO_CENTER[0], o),
         lerp(camP[1], OUTRO_CENTER[1], o),
       ];
-      // Zoom: startZoom -> END_ZOOM mengikuti progres terbang, lalu kembali
-      // ke startZoom (globe utuh, tidak terpotong) saat zoom-out keluar.
       const zoom = lerp(lerp(startZoom, END_ZOOM, easeInOut(p)), startZoom, o);
       map.jumpTo({ center: cam, zoom });
 
-      // Garis rute yang sudah ditempuh
       const traveled = [...ROUTE.slice(0, index + 1), point];
       map.getSource("route-progress")?.setData({
         type: "Feature",
         geometry: { type: "LineString", coordinates: traveled },
       });
 
-      // Posisi + rotasi pesawat mengikuti arah rute di layar
       planeMarker.setLngLat(point);
       const a = map.project(pointAt(Math.max(0, p - 0.01)).point);
       const b = map.project(pointAt(Math.min(1, p + 0.01)).point);
@@ -296,10 +274,8 @@ export default function FlightTransition() {
 
       render(current);
 
-      // Tiba di Mimika → pesawat hilang
       if (locked && !done && !vanishing && current === 1) startVanish();
 
-      // Globe sudah selesai zoom-out → baru lepas kunci scroll
       if (locked && done && outro === 1) locked = false;
 
       if (current !== target || outro !== outroTarget) {
@@ -310,7 +286,6 @@ export default function FlightTransition() {
       if (ready && raf === null) raf = requestAnimationFrame(tick);
     };
 
-    // ---------- Scroll ----------
     const readScroll = () => {
       const wrapper = wrapperRef.current;
       const rect = wrapper.getBoundingClientRect();
@@ -336,15 +311,13 @@ export default function FlightTransition() {
 
       const s = readScroll();
       target = s.progress;
-      aligned = s.top <= 2; // sejajar presisi di atas layar
+      aligned = s.top <= 2;
 
-      // Kalau pengguna balik mundur, pesawat boleh terbang lagi
       if (done && s.progress < 0.97) {
         done = false;
-        outroTarget = 0; // globe zoom-in lagi, pesawat boleh terbang lagi
+        outroTarget = 0;
       }
 
-      // Tiba di Mimika (dan pesawat memang sedang terbang) → kunci scroll
       if (!done && planeShown && s.progress >= 1) {
         locked = true;
         lockY = s.arrivalY;
@@ -355,15 +328,12 @@ export default function FlightTransition() {
       requestTick();
     };
 
-    // Ukuran layar berubah → hitung ulang zoom awal/akhir supaya globe tetap
-    // muat utuh, lalu gambar ulang.
     const onResize = () => {
       startZoom = fitZoom(containerRef.current);
       if (ready) render(current);
       handle();
     };
 
-    // Cegah scroll lewat roda mouse, sentuhan, dan keyboard saat terkunci
     const block = (e) => {
       if (locked && e.cancelable) e.preventDefault();
     };
@@ -384,9 +354,7 @@ export default function FlightTransition() {
       }
     };
 
-    // ---------- Setup peta ----------
     map.on("style.load", () => {
-      // Latar cream, tanpa bintang, supaya menyatu dengan header
       map.setFog({
         color: BG,
         "high-color": BG,
@@ -407,7 +375,6 @@ export default function FlightTransition() {
       map.addSource("route-full", { type: "geojson", data: full });
       map.addSource("route-progress", { type: "geojson", data: empty });
 
-      // Jalur penuh (redup, putus-putus)
       map.addLayer({
         id: "route-full",
         type: "line",
@@ -420,7 +387,6 @@ export default function FlightTransition() {
           "line-dasharray": [1, 2],
         },
       });
-      // Jalur yang sudah ditempuh
       map.addLayer({
         id: "route-progress",
         type: "line",
@@ -490,17 +456,7 @@ export default function FlightTransition() {
         )}
 
         <div className="pointer-events-none absolute inset-x-0 bottom-8 flex justify-center px-6">
-          <span
-            ref={hintRef}
-            className="rounded-full px-5 py-2 text-xs tracking-[0.2em]"
-            style={{
-              backgroundColor: "rgba(244,240,231,0.92)",
-              color: "#2b2a27",
-              transition: "opacity 0.4s ease",
-            }}
-          >
-            Gulir untuk melanjutkan perjalanan
-          </span>
+
         </div>
       </div>
     </section>

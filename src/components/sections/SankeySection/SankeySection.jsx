@@ -2,11 +2,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import * as d3 from "d3";
 import { sankey, sankeyLinkHorizontal } from "d3-sankey";
 
-// ---------------------------------------------------------------------------
-// Data ekspor Kabupaten Mimika, bersumber dari data/data_ekspor.xlsx.
-// Format baris: [Negara Tujuan, Pelabuhan, Nilai Ekspor].
-// Satuan nilai mengikuti file sumber; ubah UNIT bila bukan dolar AS.
-// ---------------------------------------------------------------------------
 const UNIT = "US$";
 const SOURCE = "Badan Pusat Statistik";
 const RAW_ROWS = [
@@ -27,7 +22,6 @@ const RAW_ROWS = [
   ["Taiwan", "AMAMAPARE", 36987917.7],
 ];
 
-// Nama tampilan (data memakai nama Inggris/huruf kapital).
 const COUNTRY_LABEL = { China: "Tiongkok", German: "Jerman" };
 const PORT_LABEL = {
   AMAMAPARE: "Amamapare",
@@ -35,20 +29,18 @@ const PORT_LABEL = {
   BENETE: "Benete",
 };
 
-// Palet Okabe–Ito (aman untuk buta warna). Warna pita mengikuti pelabuhan
-// pengirim; negara dan titik asal memakai abu-abu netral, dibedakan lewat label.
 const PORT_COLORS = {
-  AMAMAPARE: "#0072B2", // biru
-  "AMAMAPARE IJ": "#E69F00", // oranye
-  BENETE: "#009E73", // hijau kebiruan
+  AMAMAPARE: "#0072B2",
+  "AMAMAPARE IJ": "#E69F00",
+  BENETE: "#009E73",
 };
 const FALLBACK_COLORS = ["#CC79A7", "#56B4E9", "#D55E00", "#999999"];
 const ORIGIN_COLOR = "#2b2b2b";
 const COUNTRY_COLOR = "#6b6459";
 
 const INK = "#2b2b2b";
-const SWEEP_IN_MS = 1800; // lama sankey terbuka dari kiri ke kanan
-const SWEEP_OUT_MS = 1000; // lama menutup kembali saat section ditinggalkan
+const SWEEP_IN_MS = 1800;
+const SWEEP_OUT_MS = 1000;
 const CLIP_ID = "sankey-reveal-clip";
 
 const pctFmt = (pct) => {
@@ -62,7 +54,6 @@ const moneyFmt = (v) => {
   return `${UNIT} ${(v / 1e6).toLocaleString("id-ID", { maximumFractionDigits: 1 })} juta`;
 };
 
-// --- Susun simpul & pita dari baris data (sudah terfilter) ---
 function buildModel(rows) {
   const valid = [];
   rows.forEach(([negara, pelabuhan, nilai]) => {
@@ -128,7 +119,6 @@ function buildModel(rows) {
   return { nodes, links, ports, countries, total };
 }
 
-// --- Kartu interpretasi (dihitung dari seluruh data, tidak terpengaruh filter) ---
 function buildCards(model) {
   const { total, ports, countries } = model;
   const topPort = ports[0];
@@ -159,16 +149,14 @@ function buildCards(model) {
   ];
 }
 
-// --- Penjadwalan scroll: kartu bergerak terus dari bawah ke atas layar;
-// antar kartu diberi jarak waktu agar tidak bertabrakan.
 const CARD_COUNT = 3;
-const NEUTRAL_DURATION = 0.5; // jeda awal: sankey polos, belum ada kartu
-const CARD_DURATION = 3.0; // lama 1 kartu menempuh bawah -> atas
-const CARD_STAGGER = 1.1; // selisih waktu mulai antar kartu
+const NEUTRAL_DURATION = 0.5;
+const CARD_DURATION = 3.0;
+const CARD_STAGGER = 1.1;
 const TRAVEL_VH = 120;
 const TOTAL_UNITS =
   NEUTRAL_DURATION + (CARD_COUNT - 1) * CARD_STAGGER + CARD_DURATION;
-const LEAVE_MARGIN = 0.3; // sankey menutup sedikit sebelum akhir section
+const LEAVE_MARGIN = 0.3;
 const SMOOTHING_MS = 280;
 
 const sceneStart = (i) => NEUTRAL_DURATION + i * CARD_STAGGER;
@@ -210,7 +198,7 @@ export default function SankeySection() {
   const stickyRef = useRef(null);
   const vizRef = useRef(null);
   const cardRefs = useRef([]);
-  const sweepRef = useRef(0); // 0 = tertutup, 1 = terbuka penuh
+  const sweepRef = useRef(0);
   const targetRef = useRef(0);
   const visibleRef = useRef(false);
   const completeRef = useRef(false);
@@ -222,8 +210,8 @@ export default function SankeySection() {
   const tipDetailRef = useRef(null);
 
   const [isComplete, setIsComplete] = useState(false);
-  const [selPorts, setSelPorts] = useState([]); // kosong = semua pelabuhan
-  const [selCountries, setSelCountries] = useState([]); // kosong = semua negara
+  const [selPorts, setSelPorts] = useState([]);
+  const [selCountries, setSelCountries] = useState([]);
 
   const fullModel = useMemo(() => buildModel(RAW_ROWS), []);
   const cards = useMemo(() => buildCards(fullModel), [fullModel]);
@@ -267,8 +255,6 @@ export default function SankeySection() {
     if (tipRef.current) tipRef.current.style.opacity = "0";
   };
 
-  // Gambar sankey. Dipanggil saat filter berubah dan saat ukuran berubah.
-  // Animasi masuk (kiri -> kanan) diputar saat grafik terlihat di layar.
   useEffect(() => {
     const el = vizRef.current;
     if (!el) return undefined;
@@ -318,13 +304,11 @@ export default function SankeySection() {
         .attr("width", width)
         .attr("height", height);
 
-      // Redraw karena filter: pudar masuk singkat agar tidak terasa patah.
       if (drawnRef.current && sweep > 0.99) {
         svg.style("opacity", 0).transition().duration(350).style("opacity", 1);
       }
       drawnRef.current = true;
 
-      // Pembuka kiri -> kanan: persegi panjang pemotong yang melebar.
       const clipRect = svg
         .append("defs")
         .append("clipPath")
@@ -339,7 +323,6 @@ export default function SankeySection() {
 
       const pctOf = (v) => pctFmt((v / fullModel.total) * 100);
 
-      // --- Highlight manual (hover) ---
       let linkSel;
       let nodeSel;
       let labelSel;
@@ -356,7 +339,6 @@ export default function SankeySection() {
         labelSel.attr("opacity", 1);
       };
 
-      // --- Pita ---
       linkSel = g
         .append("g")
         .attr("fill", "none")
@@ -383,7 +365,6 @@ export default function SankeySection() {
           hideTip();
         });
 
-      // --- Simpul ---
       const kindLabel = {
         origin: "Asal",
         port: "Pelabuhan",
@@ -424,8 +405,6 @@ export default function SankeySection() {
           hideTip();
         });
 
-      // --- Label ---
-      // Asal: di kiri simpul. Pelabuhan: di atas simpul. Negara: di kanan.
       labelSel = g
         .append("g")
         .attr("pointer-events", "none")
@@ -502,7 +481,6 @@ export default function SankeySection() {
     if (controlRef.current) controlRef.current.sync();
   }, [isComplete]);
 
-  // Scroll dengan inersia: menggerakkan kartu interpretasi.
   useEffect(() => {
     let rafId = null;
     let target = 0;
@@ -578,7 +556,7 @@ export default function SankeySection() {
           ref={stickyRef}
           className="sticky top-0 flex h-screen flex-col overflow-hidden bg-[#f4f0e7]"
         >
-          {/* Judul, subjudul, filter, dan grafik menempel dalam satu layar. */}
+          {}
           <div className="max-w-story mx-auto flex shrink-0 flex-col gap-1 px-6 pb-1 pt-5 md:pt-7">
             <h2
               className="story-heading text-[#d74534]"
@@ -604,7 +582,7 @@ export default function SankeySection() {
             </p>
           </div>
 
-          {/* Filter: tanpa pilihan = semua */}
+          {}
           <div className="mx-auto flex shrink-0 flex-wrap items-center justify-center gap-x-5 gap-y-1.5 px-6 pb-1 pt-1">
             <div className="flex flex-wrap items-center justify-center gap-1.5">
               <span className="mr-0.5 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#5c564c]">
@@ -659,17 +637,13 @@ export default function SankeySection() {
             )}
           </div>
 
-          {/* Sumber data + petunjuk gulir */}
+          {}
           <div className="pointer-events-none flex shrink-0 flex-col items-center gap-0.5 px-6 pb-3 pt-1">
             <p className="text-[11px] text-[#5c564c]">Sumber data: {SOURCE}</p>
-            <p className="text-xs uppercase tracking-[0.2em] text-[#8b8577]">
-              {isComplete
-                ? "Gulir untuk lanjut ke bagian berikutnya"
-                : "Gulir untuk melanjutkan"}
-            </p>
+
           </div>
 
-          {/* Tooltip hover */}
+          {}
           <div
             ref={tipRef}
             className="pointer-events-none absolute left-0 top-0 z-20 max-w-[280px] rounded-lg bg-white/95 px-3 py-2 opacity-0 shadow-lg"
@@ -686,8 +660,8 @@ export default function SankeySection() {
             <p ref={tipDetailRef} className="mt-0.5 text-xs text-[#5c564c]" />
           </div>
 
-          {/* Kartu interpretasi: bergerak terus dari bawah ke atas melewati
-              tengah layar saat di-scroll. */}
+          {
+}
           {cards.map((card, i) => (
             <div
               key={card.key}
