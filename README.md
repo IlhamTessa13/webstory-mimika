@@ -79,8 +79,6 @@ Seluruh dataset berada di `src/data`. Data dari Badan Pusat Statistik (BPS) digu
 | `pdrb_geospasial.json` | Peta simbol proporsional | Hasil pra-pemrosesan dari `data_geospasial.xlsx`: koordinat dan nilai per kabupaten/kota. |
 | `klassen_kabkota.json` | Choropleth | Hasil pra-pemrosesan: geometri yang telah disederhanakan beserta atribut Tipologi Klassen. |
 
-### Cara data dimuat
-
 
 
 ### Catatan satuan

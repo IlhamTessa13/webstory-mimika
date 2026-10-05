@@ -7,7 +7,6 @@ import "./PanoramaSection.css";
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 const BG = "#f4f0e7";
 
-// --- Globe ------------------------------------------------------------------
 const MIMIKA = [136.8872, -4.5467];
 const FIT_RATIO = 0.8;
 const MAX_START_ZOOM = 2.2;
@@ -40,7 +39,6 @@ function createCityMarker(label, color) {
   return el;
 }
 
-// --- Panorama (tidak diubah) -----------------------------------------------
 const DEBUG =
   typeof window !== "undefined" &&
   new URLSearchParams(window.location.search).has("debug");
@@ -80,7 +78,6 @@ const toDir = (yaw, pitch, out) =>
 
 const stepFor = (p) => STEPS.reduce((idx, s, i) => (p >= s.at ? i : idx), 0);
 
-// --- Penjadwalan scroll -----------------------------------------------------
 const GLOBE_INTRO_UNITS = 2.4;
 const FADE_UNITS = 0.6;
 const PANORAMA_UNITS = 2.6;
@@ -129,8 +126,6 @@ function phaseState(raw) {
   return { globeP, globeOpacity, panoOpacity, panoramaLocal };
 }
 
-// Gaya layout kritis dikunci inline supaya globe tetap punya ukuran
-// walaupun file CSS salah / belum termuat.
 const STAGE_STYLE = {
   position: "absolute",
   top: 0,
@@ -163,7 +158,6 @@ export default function PanoramaSection() {
     const panoHost = panoStageRef.current;
     if (!wrapper || !globeHost || !panoHost) return;
 
-    // =========================== GLOBE ===========================
     let map = null;
     let globeReady = false;
     let globeStartZoom = fitZoom(globeHost);
@@ -242,7 +236,6 @@ export default function PanoramaSection() {
         if (e?.error?.status === 401) setMapboxError(true);
       });
 
-      // Pastikan canvas mapbox selalu mengikuti ukuran container
       globeRO = new ResizeObserver(() => {
         if (!map) return;
         map.resize();
@@ -252,7 +245,6 @@ export default function PanoramaSection() {
       globeRO.observe(globeHost);
     }
 
-    // =========================== PANORAMA ===========================
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     panoHost.appendChild(renderer.domElement);
@@ -379,7 +371,6 @@ export default function PanoramaSection() {
       });
     }
 
-    // ======================= SCROLL HANDLER =========================
     const computeRaw = () => {
       const rect = wrapper.getBoundingClientRect();
       const scrollable = Math.max(1, rect.height - window.innerHeight);
