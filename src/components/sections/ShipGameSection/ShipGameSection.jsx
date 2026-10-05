@@ -143,7 +143,7 @@ export default function ShipGameSection({ onComplete }) {
     >
       <div className="max-w-xl text-center">
         <h2 className="story-heading text-[#d74534] m-0 text-[clamp(1.4rem,3.5vw,2rem)] font-bold">
-          Bantu Kapal Lawd Berlayar
+          Bantu Kapal Lawd Budiono Siregar Berlayar
         </h2>
         <p className="story-lede text-[#2a3f61] mt-2 text-sm leading-relaxed opacity-80">
           Untuk membuka section berikutnya, bantu kapal Lawd mengangkut hasil

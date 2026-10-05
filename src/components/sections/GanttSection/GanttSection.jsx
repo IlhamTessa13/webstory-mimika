@@ -159,25 +159,20 @@ function buildCards(model) {
       key: "overview",
       eyebrow: `Gambaran Umum ${YEAR}`,
       title: moneyFmt(total),
-      body: `Ekspor tercatat di ${activeMonthCount} dari 12 bulan pada ${YEAR}${
-        missing ? ` (tidak tercatat dalam data: ${missing})` : ""
-      }. Tiap batang adalah satu bulan ekspor ke satu negara; makin gelap dan tinggi batangnya, makin besar nilainya. Gunakan filter periode untuk memperbesar rentang bulan tertentu.`,
+      body: `Gantt chart menyajikan jadwal dan frekuensi pengiriman bulanan komoditas konsentrat tembaga sepanjang tahun 2025 ke berbagai negara tujuan. Visualisasi ini memperlihatkan dinamika pengapalan yang berlangsung secara periodik, di mana aktivitas ekspor tidak terdistribusi merata di setiap bulan, melainkan mengikuti pola siklus logistik dan ketersediaan muatan kapal ekspor.`,
     },
     {
       key: "consistency",
       eyebrow: "Paling Konsisten",
       title: `${most.label}: ${most.activeMonths} bulan`,
-      body: `${most.label} tercatat mengekspor di ${most.activeMonths} dari 12 bulan, paling banyak di antara semua negara.${
-        runnerUp
-          ? ` ${runnerUp.label} menyusul dengan ${runnerUp.activeMonths} bulan,`
-          : ""
-      } sedangkan ${least.label} hanya muncul di ${least.activeMonths} bulan.`,
+      body: `Tiongkok tercatat sebagai negara tujuan yang paling konsisten menerima pengiriman hampir di sebagian besar bulan aktif sepanjang tahun 2025. Pola balok linimasa untuk Tiongkok tampak paling berulang dan stabil dari bulan ke bulan dibandingkan negara tujuan lainnya, mencerminkan keterikatan ekspor jangka panjang yang terstruktur secara rutin.
+`,
     },
     {
       key: "peak",
       eyebrow: "Bulan Puncak",
       title: `${MONTHS[peakIdx][0]} ${YEAR}`,
-      body: `Ekspor tertinggi terjadi pada ${MONTHS[peakIdx][0]} dengan total ${moneyFmt(peakTotal)}, atau ${pct(peakTotal)} dari ekspor setahun. ${peakTop.label} menyumbang ${pct(peakTop.v, peakTotal)} dari nilai bulan itu.`,
+      body: `Berdasarkan intensitas warna dan skala besaran nilai, bulan Agustus menonjol sebagai periode dengan nilai pengiriman ekspor terbesar sepanjang tahun 2025 (ditandai dengan warna balok paling pekat/gelap, mencapai US$ 616,2 juta pada salah satu puncak pengirimannya). Lonjakan di bulan Agustus ini mengindikasikan adanya akumulasi volume produksi atau jadwal pemberangkatan armada kapal pengangkut skala besar yang mendongkrak nilai ekspor secara signifikan pada pertengahan tahun.`,
     },
   ];
 }

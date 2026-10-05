@@ -148,7 +148,7 @@ function buildCards(model) {
       key: "port",
       eyebrow: `Pelabuhan ${topPort.label}`,
       title: `${pct(topPort.value)} dari ekspor`,
-      body: `Sebagian besar aliran ekspor terkonsentrasi melalui Pelabuhan Amamapare sebagai gerbang utama pelabuhan muat lokal di wilayah pesisir Mimika. Jalur pita aliran yang paling tebal keluar langsung dari Amamapare menuju pasar internasional menunjukkan bahwa pelabuhan ini menjadi tulang punggung pengiriman logistik luar negeri bagi komoditas tambang utama kabupaten Mimika`,
+      body: `Sebagian besar aliran ekspor terkonsentrasi melalui Pelabuhan Amamapare sebagai gerbang utama pelabuhan muat lokal di wilayah pesisir Mimika. Jalur pita aliran yang paling tebal keluar langsung dari Amamapare menuju pasar internasional menunjukkan bahwa pelabuhan ini menjadi tulang punggung pengiriman logistik luar negeri bagi komoditas tambang utama kabupaten Mimika.`,
     },
     {
       key: "country",

@@ -2,38 +2,25 @@ import { useEffect, useRef, useState } from "react";
 import mapboxgl from "mapbox-gl";
 import "mapbox-gl/dist/mapbox-gl.css";
 
-// Transisi scrollytelling: pesawat terbang dari Jakarta ke Mimika (Timika)
-// di atas globe 3D asli (Mapbox).
-//
-// Alur:
-//  1. Globe masuk layar. Pesawat BELUM muncul.
-//  2. Begitu section ini sejajar presisi di atas layar, pesawat "muncul tiba-tiba".
-//  3. Scroll menggerakkan pesawat sepanjang rute melengkung (bisa mundur juga).
-//  4. Setelah tiba di Mimika, scroll DIKUNCI sebentar, pesawat menghilang dengan
-//     animasi, globe zoom-out ke tampilan awal (latar cream terlihat), lalu
-//     scroll terbuka lagi untuk lanjut ke konten.
+
 
 const TOKEN = import.meta.env.VITE_MAPBOX_TOKEN;
 
-const BG = "#f4f0e7"; // samakan dengan warna header
+const BG = "#f4f0e7"; 
 
 const JAKARTA = [106.8456, -6.2088];
 const MIMIKA = [136.8872, -4.5467];
 
-// Arah hidung pesawat di plane.png: 90 = menghadap ATAS, 0 = menghadap KANAN.
+
 const PLANE_ROTATION_OFFSET = 90;
 const PLANE_SIZE = 56; // px
 
-// Zoom awal (saat globe masuk) dan zoom akhir (setelah zoom-out keluar) dihitung
-// OTOMATIS dari ukuran layar supaya globe selalu muat utuh, tidak terpotong.
-// FIT_RATIO = porsi sisi terpendek layar yang ditempati diameter globe
-// (0.8 = 80%). Kecilkan (mis. 0.7) untuk globe yang lebih kecil lagi,
-// besarkan (mis. 0.9) untuk globe yang lebih besar.
+
 const FIT_RATIO = 0.8;
 const MAX_START_ZOOM = 2.2;
 const MIN_START_ZOOM = 1;
 
-// Diameter globe (px) ≈ 512 * 2^zoom / π, jadi zoom agar diameter = FIT_RATIO * sisi layar:
+
 const fitZoom = (el) => {
   const side = el ? Math.min(el.clientWidth, el.clientHeight) : 0;
   if (!side) return 1.8;
@@ -41,21 +28,17 @@ const fitZoom = (el) => {
   return Math.min(MAX_START_ZOOM, Math.max(MIN_START_ZOOM, z));
 };
 
-const END_ZOOM = 4.6; // mendekat ke Papua
+const END_ZOOM = 4.6; 
 
-// Kelengkungan rute: 0 = lurus. Makin besar makin melengkung ke utara.
-// Isi nilai negatif kalau ingin melengkung ke arah sebaliknya (selatan).
+
 const CURVE = 0.22;
 
-// Porsi jarak scroll yang dipakai untuk terbang. Sisanya jadi jeda setelah tiba.
+
 const FLIGHT_SHARE = 0.94;
 
-const IN_MS = 520; // durasi animasi pesawat muncul
-const OUT_MS = 450; // durasi animasi pesawat menghilang
+const IN_MS = 520;
+const OUT_MS = 450; 
 
-// ---------- Util geometri ----------
-
-// Titik-titik sepanjang lingkaran besar (rute terpendek di bola bumi)
 function greatCircle(a, b, steps) {
   const rad = (d) => (d * Math.PI) / 180;
   const deg = (r) => (r * 180) / Math.PI;
@@ -105,7 +88,7 @@ function curvedRoute(a, b, steps = 240) {
 
 const ROUTE = curvedRoute(JAKARTA, MIMIKA);
 
-// Titik pada rute untuk progres t (0..1), plus index segmen terakhir yang dilewati
+
 function pointAt(t) {
   const clamped = Math.min(1, Math.max(0, t));
   const f = clamped * (ROUTE.length - 1);
@@ -118,14 +101,14 @@ function pointAt(t) {
   return { point: p, index: i };
 }
 
-const OUTRO_CENTER = pointAt(0.12).point; // pusat kamera di tampilan awal/akhir
+const OUTRO_CENTER = pointAt(0.12).point;
 
 const clamp01 = (t) => Math.min(1, Math.max(0, t));
 const easeInOut = (t) =>
   t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 const lerp = (a, b, t) => a + (b - a) * t;
 
-// ---------- Marker kota ----------
+
 function createCityMarker(label, color) {
   const el = document.createElement("div");
   el.style.cssText =
@@ -163,7 +146,7 @@ export default function FlightTransition() {
       projection: "globe",
       center: JAKARTA,
       zoom: startZoom,
-      interactive: false, // biar scroll halaman tidak tertahan peta
+      interactive: false, 
       attributionControl: false,
       fadeDuration: 0,
     });
@@ -172,25 +155,23 @@ export default function FlightTransition() {
       "bottom-right",
     );
 
-    // ---------- State ----------
+    
     let ready = false;
-    let target = 0; // progres dari scroll (0..1)
-    let current = 0; // progres yang sudah diperhalus
-    let outro = 0; // 0 = zoom normal, 1 = globe sudah zoom-out
+    let target = 0; 
+    let current = 0;
+    let outro = 0;
     let outroTarget = 0;
     let raf = null;
 
-    let aligned = false; // section sudah sejajar di atas layar
-    let planeShown = false; // pesawat sedang tampil
-    let vanishing = false; // animasi hilang sedang berjalan
-    let done = false; // pesawat sudah selesai & hilang di Mimika
-    let locked = false; // scroll sedang dikunci
+    let aligned = false; 
+    let planeShown = false;
+    let vanishing = false; 
+    let done = false; 
+    let locked = false; 
     let lockY = 0;
     let vanishTimer = null;
 
-    // ---------- Pesawat ----------
-    // planeEl (dipakai Mapbox untuk posisi) > popEl (animasi muncul/hilang)
-    //   > ringEl (cincin kejutan) + planeImg (rotasi arah terbang)
+   
     const planeEl = document.createElement("div");
     const popEl = document.createElement("div");
     popEl.style.cssText = `position:relative;width:${PLANE_SIZE}px;height:${PLANE_SIZE}px;opacity:0;transform:scale(0);`;
@@ -247,7 +228,7 @@ export default function FlightTransition() {
       burst();
     };
 
-    // Pesawat tampil hanya saat section sudah sejajar & belum selesai
+   
     const syncVisibility = () => {
       const want = aligned && !done && !vanishing;
       if (want && !planeShown) {
@@ -266,12 +247,12 @@ export default function FlightTransition() {
       vanishTimer = setTimeout(() => {
         vanishing = false;
         done = true;
-        outroTarget = 1; // mulai zoom-out; scroll MASIH terkunci
-        requestTick(); // loop animasi sudah berhenti, jalankan lagi
+        outroTarget = 1; 
+        requestTick(); 
       }, OUT_MS + 80);
     };
 
-    // ---------- Render per frame ----------
+    
     const render = (p) => {
       const { point, index } = pointAt(p);
 
